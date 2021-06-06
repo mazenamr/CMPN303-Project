@@ -1,3 +1,4 @@
+#include "deque.h"
 #include <signal.h>
 #include <stdbool.h>
 #include <stdio.h>
