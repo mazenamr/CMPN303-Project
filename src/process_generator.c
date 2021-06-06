@@ -3,6 +3,8 @@
 void clearResources(int);
 
 int main(int argc, char *argv[]) {
+  pid_t pid;
+
   signal(SIGINT, clearResources);
 
   if (argc < 2) {
@@ -53,6 +55,16 @@ int main(int argc, char *argv[]) {
   // 2. Read the chosen scheduling algorithm and its parameters, if there are
   // any from the argument list.
   // 3. Initiate and create the scheduler and clock processes.
+  // start the scheduler
+  pid = fork();
+  if (!pid) {
+    execl("bin/scheduler.out", "scheduler.out", NULL);
+  }
+  // start the clock
+  pid = fork();
+  if (!pid) {
+    execl("bin/clk.out", "clk.out", NULL);
+  }
   // 4. Use this function after creating the clock process to initialize clock.
   initClk();
   // To get time use this function.
