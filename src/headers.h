@@ -14,6 +14,15 @@
 
 #define SHKEY 300
 
+typedef enum SCHEDULING_ALGORITHM {
+  NONE,
+  FCFS,
+  SJF,
+  HPF,
+  SRTN,
+  RR
+} SCHEDULING_ALGORITHM;
+
 typedef struct process {
   int id;
   int arrival;
