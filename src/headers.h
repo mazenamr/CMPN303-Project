@@ -14,6 +14,13 @@
 
 #define SHKEY 300
 
+typedef struct process {
+  int id;
+  int arrival;
+  int runtime;
+  int priority;
+} process;
+
 ///==============================
 // don't mess with this variable//
 int *shmaddr; //
@@ -50,3 +57,14 @@ void destroyClk(bool terminateAll) {
     killpg(getpgrp(), SIGINT);
   }
 }
+
+void printHelp() {
+    printf("Usage: process_generator.out input.txt [scheduling algorithm]\n");
+    printf("\nScheduling algorithms available:\n");
+    printf("\t1. First Come First Serve (FCFS)\n");
+    printf("\t2. Shortest Job First (SJF)\n");
+    printf("\t3. Preemptive Highest Priority First (HPF)\n");
+    printf("\t4. Shortest Remaining Time Next (SRTN)\n");
+    printf("\t5. Round Robin (RR)\n");
+}
+
