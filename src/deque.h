@@ -15,8 +15,8 @@ typedef struct Node {
  *         that can be operated on from its top or its end.
  */
 typedef struct Deque {
-  struct Node *head;
-  struct Node *tail;
+  Node *head;
+  Node *tail;
   int size;
   int length;
 } Deque;
@@ -55,26 +55,28 @@ void push(Deque *deque, void *data) {
 /**
  * @brief  Removes a node from the top of a deque and
  *         returns True if there was a node to remove.
- *         It puts a pointer to a copy of the removed node data
- *         in DATA if DATA is NULL, otherwise it
- *         copies into it the removed node data.
+ *         It copies the removed node data to the memory
+ *         location provided in DATA. If NULL is given
+ *         instead of a memory location then it replaces
+ *         it with a pointer to a copy of the removed node data.
  *
  * @param  DEQUE pointer to the deque.
- * @param  DATA memory location to copy the removed node data to.
+ * @param  DATA pointer to memory location
+ *         to copy the removed node data to.
  */
-bool pop(Deque *deque, void *data) {
+bool pop(Deque *deque, void **data) {
   Node* head = deque->head;
 
   if (head == NULL) {
     return false;
   }
 
-  if (data == NULL) {
-    (*(void **)data) = malloc(deque->size);
+  if (*data == NULL) {
+    *data = malloc(deque->size);
   }
 
   for (int i = 0; i < deque->size; ++i) {
-    *(char *)((char *)data + i) = *(char *)((char *)head->data + i);
+    *(char *)((char *)(*data) + i) = *(char *)((char *)head->data + i);
   }
 
   deque->head = head->next;
@@ -87,26 +89,28 @@ bool pop(Deque *deque, void *data) {
 
 /**
  * @brief  Returns True if there are any Nodes in the deque.
- *         It puts a pointer to a copy of the data in the top node
- *         in DATA if DATA is NULL, otherwise it
- *         copies into it the data in the top node.
+ *         It copies the top node data to the memory
+ *         location provided in DATA. If NULL is given
+ *         instead of a memory location then it replaces
+ *         it with a pointer to a copy of the top node data.
  *
  * @param  DEQUE pointer to the deque.
- * @param  DATA memory location to copy the removed node data to.
+ * @param  DATA pointer to memory location
+ *         to copy the top node data to.
  */
-bool peektop(Deque *deque, void *data) {
+bool peektop(Deque *deque, void **data) {
   Node* head = deque->head;
 
   if (head == NULL) {
     return false;
   }
 
-  if (data == NULL) {
-    (*(void **)data) = malloc(deque->size);
+  if (*data == NULL) {
+    *data = malloc(deque->size);
   }
 
   for (int i = 0; i < deque->size; ++i) {
-    *(char *)((char *)data + i) = *(char *)((char *)head->data + i);
+    *(char *)((char *)(*data) + i) = *(char *)((char *)head->data + i);
   }
 
   return true;
@@ -145,26 +149,28 @@ void enqueue(Deque *deque, void *data) {
 /**
  * @brief  Removes a node from the end of a deque and
  *         returns True if there was a node to remove.
- *         It puts a pointer to a copy of the removed node data
- *         in DATA if DATA is NULL, otherwise it
- *         copies into it the removed node data.
+ *         It copies the removed node data to the memory
+ *         location provided in DATA. If NULL is given
+ *         instead of a memory location then it replaces
+ *         it with a pointer to a copy of the removed node data.
  *
  * @param  DEQUE pointer to the deque.
- * @param  DATA memory location to copy the removed node data to.
+ * @param  DATA pointer to memory location
+ *         to copy the removed node data to.
  */
-bool dequeue(Deque *deque, void *data) {
+bool dequeue(Deque *deque, void **data) {
   Node* tail = deque->tail;
 
   if (tail == NULL) {
     return false;
   }
 
-  if (data == NULL) {
-    (*(void **)data) = malloc(deque->size);
+  if (*data == NULL) {
+    *data = malloc(deque->size);
   }
 
   for (int i = 0; i < deque->size; ++i) {
-    *(char *)((char *)data + i) = *(char *)((char *)tail->data + i);
+    *(char *)((char *)(*data) + i) = *(char *)((char *)tail->data + i);
   }
 
   deque->tail = tail->prev;
@@ -177,26 +183,28 @@ bool dequeue(Deque *deque, void *data) {
 
 /**
  * @brief  Returns True if there are any Nodes in the deque.
- *         It puts a pointer to a copy of the data in the end node
- *         in DATA if DATA is NULL, otherwise it
- *         copies into it the data in the end node.
+ *         It copies the end node data to the memory
+ *         location provided in DATA. If NULL is given
+ *         instead of a memory location then it replaces
+ *         it with a pointer to a copy of the end node data.
  *
  * @param  DEQUE pointer to the deque.
- * @param  DATA memory location to copy the removed node data to.
+ * @param  DATA pointer to memory location
+ *         to copy the end node data to.
  */
-bool peekend(Deque *deque, void *data) {
+bool peekend(Deque *deque, void **data) {
   Node* tail = deque->tail;
 
   if (tail == NULL) {
     return false;
   }
 
-  if (data == NULL) {
-    (*(void **)data) = malloc(deque->size);
+  if (*data == NULL) {
+    *data = malloc(deque->size);
   }
 
   for (int i = 0; i < deque->size; ++i) {
-    *(char *)((char *)data + i) = *(char *)((char *)tail->data + i);
+    *(char *)((char *)(*data) + i) = *(char *)((char *)tail->data + i);
   }
 
   return true;
