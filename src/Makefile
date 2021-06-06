@@ -1,5 +1,5 @@
 build:
-	mkdir bin
+	[ -d bin ] || mkdir bin
 	gcc process_generator.c -o bin/process_generator.out
 	gcc clk.c -o bin/clk.out
 	gcc scheduler.c -o bin/scheduler.out

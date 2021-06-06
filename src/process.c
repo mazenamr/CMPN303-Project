@@ -3,18 +3,16 @@
 /* Modify this file as needed*/
 int remainingtime;
 
-int main(int agrc, char *argv[])
-{
-    initClk();
+int main(int agrc, char *argv[]) {
+  initClk();
 
-    //TODO The process needs to get the remaining time from somewhere
-    //remainingtime = ??;
-    while (remainingtime > 0)
-    {
-        // remainingtime = ??;
-    }
+  // TODO The process needs to get the remaining time from somewhere
+  // remainingtime = ??;
+  while (remainingtime > 0) {
+    // remainingtime = ??;
+  }
 
-    destroyClk(false);
+  destroyClk(false);
 
-    return 0;
+  return 0;
 }
