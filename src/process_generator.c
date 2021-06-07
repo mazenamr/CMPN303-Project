@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
         printf("Error in input file line %d!\n", lineNumber);
         exit(-1);
       }
-      enqueue(processes, &process);
+      pushback(processes, &process);
     }
     ++lineNumber;
   }
