@@ -57,6 +57,11 @@ int main(int argc, char *argv[]) {
 
   // 2. Read the chosen scheduling algorithm and its parameters, if there are
   // any from the argument list.
+  SCHEDULING_ALGORITHM sch = NONE;
+  if (argc > 2) {
+    sch = atoi(argv[2]);
+  }
+
   // 3. Initiate and create the scheduler and clock processes.
   // start the scheduler
   pid = fork();
