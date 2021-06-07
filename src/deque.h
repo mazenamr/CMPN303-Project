@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 /**
- * @brief  Node used to represent one element in a deque.
+ * @brief  Struct used to represent one element in a deque.
  */
 typedef struct Node {
   void *data;
@@ -11,7 +11,7 @@ typedef struct Node {
 } Node;
 
 /**
- * @brief  Deque used to represent a collection of elements
+ * @brief  Struct used to represent a collection of elements
  *         that can be operated on from its top or its end.
  */
 typedef struct Deque {
@@ -21,6 +21,20 @@ typedef struct Deque {
   int length;
 } Deque;
 
+/**
+ * @brief  Creates and returns a new deque
+ *         with node data of size SIZE.
+ *
+ * @param  SIZE size of the node data.
+ */
+Deque* newDeque(int size) {
+  Deque *deque = malloc(sizeof(Deque));
+  deque->head = NULL;
+  deque->tail = NULL;
+  deque->size = size;
+  deque->length = 0;
+  return deque;
+}
 
 /**
  * @brief  Inserts a new node at the top of a deque containing
@@ -134,7 +148,7 @@ void enqueue(Deque *deque, void *data) {
   newNode->next = NULL;
   newNode->prev = deque->tail;
 
-  if (deque->tail != NULL) {
+  if ((deque->tail) != NULL) {
     deque->tail->next = newNode;
   }
 
