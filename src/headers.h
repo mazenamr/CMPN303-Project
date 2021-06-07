@@ -24,12 +24,15 @@ typedef enum SCHEDULING_ALGORITHM {
   RR
 } SCHEDULING_ALGORITHM;
 
-typedef struct process {
+/**
+ * @brief  Struct used to represent a process to be scheduled.
+ */
+typedef struct Process {
   int id;
   int arrival;
   int runtime;
   int priority;
-} process;
+} Process;
 
 ///==============================
 // don't mess with this variable//

@@ -1,6 +1,7 @@
 #include "headers.h"
 
 void clearResources(int);
+Deque *processes;
 
 int main(int argc, char *argv[]) {
   pid_t pid;
@@ -22,32 +23,34 @@ int main(int argc, char *argv[]) {
     exit(-1);
   }
 
-  process processes[100];
+  processes = newDeque(sizeof(Process));
 
   char line[255];
-  int pIndex = 0;
   int lineNumber = 1;
   while (fscanf(inputFile, " %[^\n]s", line) != EOF) {
+    Process process;
     if (line[0] != '#') {
       if (sscanf(line, "%d\t%d\t%d\t%d",
-            &(processes[pIndex].id),
-            &(processes[pIndex].arrival),
-            &(processes[pIndex].runtime),
-            &(processes[pIndex].priority)) < 4) {
+            &(process.id),
+            &(process.arrival),
+            &(process.runtime),
+            &(process.priority)) < 4) {
         printf("Error in input file line %d!\n", lineNumber);
         exit(-1);
       }
-      ++pIndex;
+      enqueue(processes, &process);
     }
     ++lineNumber;
   }
 
-  for (int i = 0; i < pIndex; ++i) {
+  Node *currentProcess = processes->head;
+  for (int i = 0; i < processes->length; ++i) {
     printf("%d\t%d\t%d\t%d\n",
-        processes[i].id,
-        processes[i].arrival,
-        processes[i].runtime,
-        processes[i].priority);
+        ((Process*)(currentProcess->data))->id,
+        ((Process*)(currentProcess->data))->arrival,
+        ((Process*)(currentProcess->data))->runtime,
+        ((Process*)(currentProcess->data))->priority);
+    currentProcess = currentProcess->next;
   }
 
   fclose(inputFile);
@@ -60,24 +63,30 @@ int main(int argc, char *argv[]) {
   if (!pid) {
     execl("bin/scheduler.out", "scheduler.out", NULL);
   }
+
   // start the clock
   pid = fork();
   if (!pid) {
     execl("bin/clk.out", "clk.out", NULL);
   }
+
   // 4. Use this function after creating the clock process to initialize clock.
   initClk();
   // To get time use this function.
   int x = getClk();
   printf("Current Time is %d\n", x);
+
   // TODO Generation Main Loop
   // 5. Create a data structure for processes and provide it with its
   // parameters.
   // 6. Send the information to the scheduler at the appropriate time.
   // 7. Clear clock resources
   destroyClk(true);
+  free(processes);
 }
 
 void clearResources(int signum) {
   // TODO Clears all resources in case of interruption
+  destroyClk(true);
+  free(processes);
 }
