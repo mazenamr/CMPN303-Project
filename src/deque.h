@@ -37,6 +37,21 @@ Deque* newDeque(int size) {
 }
 
 /**
+ * @brief  Frees the deque and all its nodes.
+ *
+ * @param  DEQUE the deque to be freed.
+ */
+void deleteDeque(Deque *deque) {
+  Node *node = deque->head;
+  for (int i = 0; i < deque->length; ++i) {
+    Node *prev = node;
+    node = node->next;
+    free(prev);
+  }
+  free(deque);
+}
+
+/**
  * @brief  Inserts a new node to the front of a deque containing
  *         the data provided inside DATA.
  *

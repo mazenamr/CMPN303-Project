@@ -87,11 +87,9 @@ int main(int argc, char *argv[]) {
   // 6. Send the information to the scheduler at the appropriate time.
   // 7. Clear clock resources
   destroyClk(true);
-  free(processes);
 }
 
 void clearResources(int signum) {
   // TODO Clears all resources in case of interruption
-  destroyClk(true);
-  free(processes);
+  deleteDeque(processes);
 }
