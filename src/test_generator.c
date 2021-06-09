@@ -12,11 +12,19 @@ struct processData {
 
 int main(int argc, char *argv[]) {
   FILE *pFile;
-  pFile = fopen("processes.txt", "w");
+  if (argc > 1) {
+    pFile = fopen(argv[1], "w");
+  } else {
+    pFile = fopen("processes.txt", "w");
+  }
   int no;
   struct processData pData;
-  printf("Please enter the number of processes you want to generate: ");
-  scanf("%d", &no);
+  if (argc > 2) {
+    no = atoi(argv[2]);
+  } else {
+    printf("Please enter the number of processes you want to generate: ");
+    scanf("%d", &no);
+  }
   srand(time(null));
   // fprintf(pFile,"%d\n",no);
   fprintf(pFile, "#id arrival runtime priority\n");
