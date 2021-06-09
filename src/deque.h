@@ -43,7 +43,7 @@ Deque* newDeque(int size) {
  * @param  DEQUE pointer to the deque.
  * @param  DATA pointer to the data to be inserted.
  */
-void pushfront(Deque *deque, void *data) {
+void pushFront(Deque *deque, void *data) {
   Node *newNode = (Node *)malloc(sizeof(Node));
   newNode->data = malloc(deque->size);
 
@@ -73,7 +73,7 @@ void pushfront(Deque *deque, void *data) {
  * @param  DEQUE pointer to the deque.
  * @param  DATA pointer to the data to be inserted.
  */
-void pushback(Deque *deque, void *data) {
+void pushBack(Deque *deque, void *data) {
   Node *newNode = (Node *)malloc(sizeof(Node));
   newNode->data = malloc(deque->size);
 
@@ -108,7 +108,7 @@ void pushback(Deque *deque, void *data) {
  * @param  DATA pointer to memory location
  *         to copy the removed node data to.
  */
-bool popfront(Deque *deque, void **data) {
+bool popFront(Deque *deque, void **data) {
   Node* head = deque->head;
 
   if (head == NULL) {
@@ -143,7 +143,7 @@ bool popfront(Deque *deque, void **data) {
  * @param  DATA pointer to memory location
  *         to copy the removed node data to.
  */
-bool popback(Deque *deque, void **data) {
+bool popBack(Deque *deque, void **data) {
   Node* tail = deque->tail;
 
   if (tail == NULL) {
@@ -177,7 +177,7 @@ bool popback(Deque *deque, void **data) {
  * @param  DATA pointer to memory location
  *         to copy the front node data to.
  */
-bool peekfront(Deque *deque, void **data) {
+bool peekFront(Deque *deque, void **data) {
   Node* head = deque->head;
 
   if (head == NULL) {
@@ -206,7 +206,7 @@ bool peekfront(Deque *deque, void **data) {
  * @param  DATA pointer to memory location
  *         to copy the back node data to.
  */
-bool peekback(Deque *deque, void **data) {
+bool peekBack(Deque *deque, void **data) {
   Node* tail = deque->tail;
 
   if (tail == NULL) {
