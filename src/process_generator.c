@@ -5,6 +5,7 @@ Deque *processes;
 
 int main(int argc, char *argv[]) {
   pid_t pid;
+  processes = newDeque(sizeof(Process));
 
   signal(SIGINT, clearResources);
 
@@ -20,8 +21,6 @@ int main(int argc, char *argv[]) {
     printf("Couldn't open input file %s!\n", argv[1]);
     exit(-1);
   }
-
-  processes = newDeque(sizeof(Process));
 
   // read the input file line by line and create a process
   // for each line that doesn't start with #

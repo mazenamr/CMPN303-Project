@@ -66,6 +66,7 @@ void push(CircularQueue *circularQueue, void *data) {
     node->next = circularQueue->head;
     node->prev = circularQueue->head->prev;
     circularQueue->head->prev = node;
+    node->prev->next = node;
   }
 
   circularQueue->length += 1;
@@ -102,6 +103,7 @@ bool pop(CircularQueue *circularQueue, void **data) {
 
   if (circularQueue->head != NULL) {
     circularQueue->head->prev = head->prev;
+    head->prev->next = circularQueue->head;
   }
 
   circularQueue->length -= 1;
