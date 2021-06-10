@@ -20,9 +20,9 @@ clean:
 all: clean build
 
 debug:
-	./bin/test_generator.out ./bin/processes.txt 36
+	./bin/test_generator.out ./bin/processes.txt 6
 	gdb ./bin/process_generator.out ./bin/processes.txt 3
 
 run:
-	./bin/test_generator.out ./bin/processes.txt 36
+	./bin/test_generator.out ./bin/processes.txt 6
 	./bin/process_generator.out ./bin/processes.txt 3

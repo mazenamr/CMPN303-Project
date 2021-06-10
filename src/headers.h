@@ -16,6 +16,8 @@
 
 #define SHKEY 300
 
+const int DELAY_TIME = 200000;
+
 typedef enum SCHEDULING_ALGORITHM {
   NONE,
   FCFS,

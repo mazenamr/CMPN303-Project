@@ -2,7 +2,6 @@
 
 void clearResources(int);
 Deque *processes;
-bool ended = false;
 
 int main(int argc, char *argv[]) {
   pid_t pid;
@@ -15,8 +14,6 @@ int main(int argc, char *argv[]) {
     exit(-1);
   }
 
-  // TODO Initialization
-  // 1. Read the input files.
   FILE *inputFile = fopen(argv[1], "r");
 
   if (inputFile == NULL) {
@@ -26,16 +23,15 @@ int main(int argc, char *argv[]) {
 
   processes = newDeque(sizeof(Process));
 
+  // read the input file line by line and create a process
+  // for each line that doesn't start with #
   char line[255];
   int lineNumber = 1;
   while (fscanf(inputFile, " %[^\n]s", line) != EOF) {
     Process process;
     if (line[0] != '#') {
-      if (sscanf(line, "%d\t%d\t%d\t%d",
-            &(process.id),
-            &(process.arrival),
-            &(process.runtime),
-            &(process.priority)) < 4) {
+      if (sscanf(line, "%d\t%d\t%d\t%d", &(process.id), &(process.arrival),
+                 &(process.runtime), &(process.priority)) < 4) {
         printf("Error in input file line %d!\n", lineNumber);
         exit(-1);
       }
@@ -46,61 +42,49 @@ int main(int argc, char *argv[]) {
 
   fclose(inputFile);
 
-  // 2. Read the chosen scheduling algorithm and its parameters, if there are
-  // any from the argument list.
+  // get the scheduling algorithm
   SCHEDULING_ALGORITHM sch = NONE;
   if (argc > 2) {
     sch = atoi(argv[2]);
   }
 
-  // 3. Initiate and create the scheduler and clock processes.
-  // start the scheduler
-  pid = fork();
-  if (!pid) {
-    execl("bin/scheduler.out", "scheduler.out", NULL);
-  }
-
-  // start the clock
+  // start the clock process
   pid = fork();
   if (!pid) {
     execl("bin/clk.out", "clk.out", NULL);
   }
 
-  // 4. Use this function after creating the clock process to initialize clock.
-  initClk();
-  // To get time use this function.
-  int x = getClk();
-  printf("Current Time is %d\n", x);
-  Process* currentProcess = NULL;
-  while (popBack(processes, (void *)&currentProcess)) {
-    while (currentProcess->arrival > getClk()) {
-      printf("Time is %d\n", getClk());
-      usleep(500000);
-    }
-    printf("%d\t%d\t%d\t%d\t%d\n",
-        currentProcess->id,
-        currentProcess->arrival,
-        currentProcess->runtime,
-        currentProcess->priority,
-        getClk());
+  // start the scheduler process
+  pid = fork();
+  if (!pid) {
+    execl("bin/scheduler.out", "scheduler.out", NULL);
   }
 
-  // TODO Generation Main Loop
-  // 5. Create a data structure for processes and provide it with its
-  // parameters.
-  // 6. Send the information to the scheduler at the appropriate time.
-  // 7. Clear clock resources
-  ended = true;
-  deleteDeque(processes);
-  destroyClk(true);
+  // initialize the clock counter
+  initClk();
+
+  // print the info of each process on reaching its arrival time
+  Process *currentProcess = NULL;
+  while (popFront(processes, (void *)&currentProcess)) {
+    while (currentProcess->arrival > getClk()) {
+      usleep(DELAY_TIME);
+    }
+    printf("%d\t%d\t%d\t%d\t%d\n", currentProcess->id, currentProcess->arrival,
+           getClk(), currentProcess->runtime, currentProcess->priority);
+    // TODO Send the process to the scheduler
+  }
+
+  clearResources(-1);
 }
 
 void clearResources(int signum) {
-  // TODO Clears all resources in case of interruption
+  // clear resources
+  // but only if they weren't already cleared
+  static bool ended = false;
   if (!ended) {
     ended = true;
-    destroyClk(true);
     deleteDeque(processes);
-    exit(0);
+    destroyClk(true);
   }
+  exit(0);
 }
