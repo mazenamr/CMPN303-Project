@@ -59,25 +59,25 @@ void deleteDeque(Deque *deque) {
  * @param  DATA pointer to the data to be inserted.
  */
 void pushFront(Deque *deque, void *data) {
-  Node *newNode = (Node *)malloc(sizeof(Node));
-  newNode->data = malloc(deque->size);
+  Node *node = (Node *)malloc(sizeof(Node));
+  node->data = malloc(deque->size);
 
   for (int i = 0; i < deque->size; ++i) {
-    *(char *)((char *)newNode->data + i) = *(char *)((char *)data + i);
+    *(char *)((char *)node->data + i) = *(char *)((char *)data + i);
   }
 
-  newNode->next = deque->head;
-  newNode->prev = NULL;
+  node->next = deque->head;
+  node->prev = NULL;
 
   if (deque->head != NULL) {
-    deque->head->prev = newNode;
+    deque->head->prev = node;
   }
 
-  deque->head = newNode;
+  deque->head = node;
   deque->length += 1;
 
   if (deque->tail == NULL) {
-    deque->tail = newNode;
+    deque->tail = node;
   }
 }
 
@@ -89,30 +89,30 @@ void pushFront(Deque *deque, void *data) {
  * @param  DATA pointer to the data to be inserted.
  */
 void pushBack(Deque *deque, void *data) {
-  Node *newNode = (Node *)malloc(sizeof(Node));
-  newNode->data = malloc(deque->size);
+  Node *node = (Node *)malloc(sizeof(Node));
+  node->data = malloc(deque->size);
 
   for (int i = 0; i < deque->size; ++i) {
-    *(char *)((char *)newNode->data + i) = *(char *)((char *)data + i);
+    *(char *)((char *)node->data + i) = *(char *)((char *)data + i);
   }
 
-  newNode->next = NULL;
-  newNode->prev = deque->tail;
+  node->next = NULL;
+  node->prev = deque->tail;
 
   if ((deque->tail) != NULL) {
-    deque->tail->next = newNode;
+    deque->tail->next = node;
   }
 
-  deque->tail = newNode;
+  deque->tail = node;
   deque->length += 1;
 
   if (deque->head == NULL) {
-    deque->head = newNode;
+    deque->head = node;
   }
 }
 
 /**
- * @brief  Removes a node from the front of a deque and
+ * @brief  Removes the node at the front of a deque and
  *         returns True if there was a node to remove.
  *         It copies the removed node data to the memory
  *         location provided in DATA. If NULL is given
@@ -155,7 +155,7 @@ bool popFront(Deque *deque, void **data) {
 }
 
 /**
- * @brief  Removes a node from the back of a deque and
+ * @brief  Removes the node at the back of a deque and
  *         returns True if there was a node to remove.
  *         It copies the removed node data to the memory
  *         location provided in DATA. If NULL is given
