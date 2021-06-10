@@ -4,13 +4,14 @@
 #include "node.h"
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 /**
  * @brief  Struct used to represent a circular collection of elements
  */
 typedef struct CircularQueue {
   Node *head;
-  int size;
+  size_t size;
   int length;
 } CircularQueue;
 
@@ -20,7 +21,7 @@ typedef struct CircularQueue {
  *
  * @param  SIZE size of the node data.
  */
-CircularQueue* newCircularQueue(int size) {
+CircularQueue* newCircularQueue(size_t size) {
   CircularQueue *circularQueue = (CircularQueue *)malloc(sizeof(CircularQueue));
   circularQueue->head = NULL;
   circularQueue->size = size;
@@ -54,9 +55,7 @@ void push(CircularQueue *circularQueue, void *data) {
   Node *node = (Node *)malloc(sizeof(Node));
   node->data = malloc(circularQueue->size);
 
-  for (int i = 0; i < circularQueue->size; ++i) {
-    *(char *)((char *)node->data + i) = *(char *)((char *)data + i);
-  }
+  memcpy(node->data, data, circularQueue->size);
 
   if (circularQueue->head == NULL) {
     node->next = node;
@@ -89,9 +88,9 @@ void push(CircularQueue *circularQueue, void *data) {
  *         to copy the removed node data to.
  */
 bool pop(CircularQueue *circularQueue, void **data) {
-  Node *head = circularQueue->head;
+  Node *node = circularQueue->head;
 
-  if (head == NULL) {
+  if (node == NULL) {
     return false;
   }
 
@@ -100,21 +99,19 @@ bool pop(CircularQueue *circularQueue, void **data) {
       *data = malloc(circularQueue->size);
     }
 
-    for (int i = 0; i < circularQueue->size; ++i) {
-      *(char *)((char *)(*data) + i) = *(char *)((char *)head->data + i);
-    }
+    memcpy(*data, node->data, circularQueue->size);
   }
 
-  circularQueue->head = (head == head->next) ? NULL : head->next;
+  circularQueue->head = (node == node->next) ? NULL : node->next;
 
   if (circularQueue->head != NULL) {
-    circularQueue->head->prev = head->prev;
-    head->prev->next = circularQueue->head;
+    circularQueue->head->prev = node->prev;
+    node->prev->next = circularQueue->head;
   }
 
   circularQueue->length -= 1;
 
-  free(head);
+  free(node);
   return true;
 }
 
@@ -130,9 +127,9 @@ bool pop(CircularQueue *circularQueue, void **data) {
  *         to copy the head node data to.
  */
 bool peek(CircularQueue *circularQueue, void **data) {
-  Node *head = circularQueue->head;
+  Node *node = circularQueue->head;
 
-  if (head == NULL) {
+  if (node == NULL) {
     return false;
   }
 
@@ -140,9 +137,7 @@ bool peek(CircularQueue *circularQueue, void **data) {
     *data = malloc(circularQueue->size);
   }
 
-  for (int i = 0; i < circularQueue->size; ++i) {
-    *(char *)((char *)(*data) + i) = *(char *)((char *)head->data + i);
-  }
+  memcpy(*data, node->data, circularQueue->size);
 
   return true;
 }

@@ -4,6 +4,7 @@
 #include "node.h"
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 /**
  * @brief  Struct used to represent a collection of elements
@@ -12,7 +13,7 @@
 typedef struct Deque {
   Node *head;
   Node *tail;
-  int size;
+  size_t size;
   int length;
 } Deque;
 
@@ -22,7 +23,7 @@ typedef struct Deque {
  *
  * @param  SIZE size of the node data.
  */
-Deque* newDeque(int size) {
+Deque* newDeque(size_t size) {
   Deque *deque = (Deque *)malloc(sizeof(Deque));
   deque->head = NULL;
   deque->tail = NULL;
@@ -57,9 +58,7 @@ void pushFront(Deque *deque, void *data) {
   Node *node = (Node *)malloc(sizeof(Node));
   node->data = malloc(deque->size);
 
-  for (int i = 0; i < deque->size; ++i) {
-    *(char *)((char *)node->data + i) = *(char *)((char *)data + i);
-  }
+  memcpy(node->data, data, deque->size);
 
   node->next = deque->head;
   node->prev = NULL;
@@ -87,9 +86,7 @@ void pushBack(Deque *deque, void *data) {
   Node *node = (Node *)malloc(sizeof(Node));
   node->data = malloc(deque->size);
 
-  for (int i = 0; i < deque->size; ++i) {
-    *(char *)((char *)node->data + i) = *(char *)((char *)data + i);
-  }
+  memcpy(node->data, data, deque->size);
 
   node->next = NULL;
   node->prev = deque->tail;
@@ -123,9 +120,9 @@ void pushBack(Deque *deque, void *data) {
  *         to copy the removed node data to.
  */
 bool popFront(Deque *deque, void **data) {
-  Node* head = deque->head;
+  Node* node = deque->head;
 
-  if (head == NULL) {
+  if (node == NULL) {
     return false;
   }
 
@@ -133,14 +130,10 @@ bool popFront(Deque *deque, void **data) {
     if (*data == NULL) {
       *data = malloc(deque->size);
     }
-
-    for (int i = 0; i < deque->size; ++i) {
-      *(char *)((char *)(*data) + i) = *(char *)((char *)head->data + i);
-    }
+    memcpy(*data, node->data, deque->size);
   }
 
-
-  deque->head = head->next;
+  deque->head = node->next;
   deque->length -= 1;
 
   if (deque->length) {
@@ -152,7 +145,7 @@ bool popFront(Deque *deque, void **data) {
     deque->tail = NULL;
   }
 
-  free(head);
+  free(node);
   return true;
 }
 
@@ -173,9 +166,9 @@ bool popFront(Deque *deque, void **data) {
  *         to copy the removed node data to.
  */
 bool popBack(Deque *deque, void **data) {
-  Node* tail = deque->tail;
+  Node* node = deque->tail;
 
-  if (tail == NULL) {
+  if (node == NULL) {
     return false;
   }
 
@@ -183,13 +176,10 @@ bool popBack(Deque *deque, void **data) {
     if (*data == NULL) {
       *data = malloc(deque->size);
     }
-
-    for (int i = 0; i < deque->size; ++i) {
-      *(char *)((char *)(*data) + i) = *(char *)((char *)tail->data + i);
-    }
+    memcpy(*data, node->data, deque->size);
   }
 
-  deque->tail = tail->prev;
+  deque->tail = node->prev;
   deque->length -= 1;
 
   if (deque->length) {
@@ -201,7 +191,7 @@ bool popBack(Deque *deque, void **data) {
     deque->head = NULL;
   }
 
-  free(tail);
+  free(node);
   return true;
 }
 
@@ -217,9 +207,9 @@ bool popBack(Deque *deque, void **data) {
  *         to copy the front node data to.
  */
 bool peekFront(Deque *deque, void **data) {
-  Node* head = deque->head;
+  Node* node = deque->head;
 
-  if (head == NULL) {
+  if (node == NULL) {
     return false;
   }
 
@@ -227,9 +217,7 @@ bool peekFront(Deque *deque, void **data) {
     *data = malloc(deque->size);
   }
 
-  for (int i = 0; i < deque->size; ++i) {
-    *(char *)((char *)(*data) + i) = *(char *)((char *)head->data + i);
-  }
+  memcpy(*data, node->data, deque->size);
 
   return true;
 }
@@ -246,9 +234,9 @@ bool peekFront(Deque *deque, void **data) {
  *         to copy the back node data to.
  */
 bool peekBack(Deque *deque, void **data) {
-  Node* tail = deque->tail;
+  Node* node = deque->tail;
 
-  if (tail == NULL) {
+  if (node == NULL) {
     return false;
   }
 
@@ -256,9 +244,7 @@ bool peekBack(Deque *deque, void **data) {
     *data = malloc(deque->size);
   }
 
-  for (int i = 0; i < deque->size; ++i) {
-    *(char *)((char *)(*data) + i) = *(char *)((char *)tail->data + i);
-  }
+  memcpy(*data, node->data, deque->size);
 
   return true;
 }

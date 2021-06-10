@@ -90,4 +90,3 @@ void printHelp() {
     printf("\t4. Shortest Remaining Time Next (SRTN)\n");
     printf("\t5. Round Robin (RR)\n");
 }
-
