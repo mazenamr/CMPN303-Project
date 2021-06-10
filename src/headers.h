@@ -17,7 +17,9 @@
 
 #define SHKEY 300
 
-const int DELAY_TIME = 200000;
+// 1,000,000 = 1 sec
+const int CLOCK_TICK_DURATION = 500000;
+const int DELAY_TIME = CLOCK_TICK_DURATION / 10;
 
 typedef enum SCHEDULING_ALGORITHM {
   NONE,

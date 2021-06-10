@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
   }
   *shmaddr = clk; /* Initialize shared memory */
   while (1) {
-    sleep(1);
+    usleep(CLOCK_TICK_DURATION);
     (*shmaddr)++;
   }
 }
