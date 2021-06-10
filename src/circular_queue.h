@@ -76,12 +76,12 @@ void push(CircularQueue *circularQueue, void *data) {
  *         instead of a memory location then it replaces
  *         it with a pointer to a copy of the removed node data.
  *
- * @param  CIRCULAR_QUEEU pointer to the circular queue.
+ * @param  CIRCULAR_QUEUE pointer to the circular queue.
  * @param  DATA pointer to memory location
  *         to copy the removed node data to.
  */
 bool pop(CircularQueue *circularQueue, void **data) {
-  Node* head = circularQueue->head;
+  Node *head = circularQueue->head;
 
   if (head == NULL) {
     return false;
@@ -119,7 +119,7 @@ bool pop(CircularQueue *circularQueue, void **data) {
  *         to copy the head node data to.
  */
 bool peek(CircularQueue *circularQueue, void **data) {
-  Node* head = circularQueue->head;
+  Node *head = circularQueue->head;
 
   if (head == NULL) {
     return false;
@@ -169,7 +169,7 @@ bool moveNext(CircularQueue *circularQueue, void **data) {
  * @param  DATA pointer to memory location
  *         to copy the head node data to.
  */
-bool moveNext(CircularQueue *circularQueue, void **data) {
+bool movePrev(CircularQueue *circularQueue, void **data) {
   if (peek(circularQueue, data)) {
     circularQueue->head = circularQueue->head->prev;
     return true;

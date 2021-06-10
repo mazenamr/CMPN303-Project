@@ -1,3 +1,4 @@
+#include "circular_queue.h"
 #include "deque.h"
 #include <signal.h>
 #include <stdbool.h>
