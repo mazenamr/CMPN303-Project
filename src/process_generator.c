@@ -44,16 +44,6 @@ int main(int argc, char *argv[]) {
     ++lineNumber;
   }
 
-  Node *currentProcess = processes->head;
-  for (int i = 0; i < processes->length; ++i) {
-    printf("%d\t%d\t%d\t%d\n",
-        ((Process*)(currentProcess->data))->id,
-        ((Process*)(currentProcess->data))->arrival,
-        ((Process*)(currentProcess->data))->runtime,
-        ((Process*)(currentProcess->data))->priority);
-    currentProcess = currentProcess->next;
-  }
-
   fclose(inputFile);
 
   // 2. Read the chosen scheduling algorithm and its parameters, if there are
@@ -81,6 +71,19 @@ int main(int argc, char *argv[]) {
   // To get time use this function.
   int x = getClk();
   printf("Current Time is %d\n", x);
+  Process* currentProcess = NULL;
+  while (popBack(processes, (void *)&currentProcess)) {
+    while (currentProcess->arrival > getClk()) {
+      printf("Time is %d\n", getClk());
+      usleep(500000);
+    }
+    printf("%d\t%d\t%d\t%d\t%d\n",
+        currentProcess->id,
+        currentProcess->arrival,
+        currentProcess->runtime,
+        currentProcess->priority,
+        getClk());
+  }
 
   // TODO Generation Main Loop
   // 5. Create a data structure for processes and provide it with its
