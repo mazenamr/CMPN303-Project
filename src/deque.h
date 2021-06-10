@@ -139,8 +139,16 @@ bool popFront(Deque *deque, void **data) {
   }
 
   deque->head = head->next;
-  deque->head->prev = NULL;
   deque->length -= 1;
+
+  if (deque->length) {
+    deque->head->prev = NULL;
+    if (deque->length == 1) {
+      deque->tail->prev = NULL;
+    }
+  } else {
+    deque->tail = NULL;
+  }
 
   free(head);
   return true;
@@ -174,8 +182,16 @@ bool popBack(Deque *deque, void **data) {
   }
 
   deque->tail = tail->prev;
-  deque->tail->next = NULL;
   deque->length -= 1;
+
+  if (deque->length) {
+    deque->tail->next = NULL;
+    if (deque->length == 1) {
+      deque->head->next = NULL;
+    }
+  } else {
+    deque->head = NULL;
+  }
 
   free(tail);
   return true;
