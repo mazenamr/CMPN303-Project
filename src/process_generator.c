@@ -84,7 +84,8 @@ int main(int argc, char *argv[]) {
     }
     printf("%d\t%d\t%d\t%d\t%d\n", currentProcess->id, currentProcess->arrival,
            getClk(), currentProcess->runtime, currentProcess->priority);
-    // TODO: Send the process to the scheduler
+    // TODO: setup the shared memory and semaphores
+    // TODO: send the process to the scheduler
   }
   free(currentProcess);
 

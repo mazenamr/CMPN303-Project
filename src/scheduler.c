@@ -1,11 +1,24 @@
 #include "headers.h"
 
 int main(int argc, char *argv[]) {
+  signal(SIGINT, clearResources);
   initClk();
 
-  // TODO: implement the scheduler.
-  // TODO: upon termination release the clock resources.
-  while (true);
+  while (true) {
+    int tick = getClk();
 
-  destroyClk(true);
+    // TODO: setup the shared memory and semaphores
+    // TODO: handle the processes that arrive
+
+    while (tick == getClk()) {
+      usleep(DELAY_TIME/5);
+    }
+  }
+
+  destroyClk(false);
+}
+
+void clearResources(int signum) {
+  destroyClk(false);
+  exit(0);
 }
