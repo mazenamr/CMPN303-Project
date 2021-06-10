@@ -2,6 +2,7 @@
 
 void clearResources(int);
 Deque *processes;
+bool ended = false;
 
 int main(int argc, char *argv[]) {
   pid_t pid;
@@ -86,10 +87,17 @@ int main(int argc, char *argv[]) {
   // parameters.
   // 6. Send the information to the scheduler at the appropriate time.
   // 7. Clear clock resources
+  ended = true;
+  deleteDeque(processes);
   destroyClk(true);
 }
 
 void clearResources(int signum) {
   // TODO Clears all resources in case of interruption
-  deleteDeque(processes);
+  if (!ended) {
+    ended = true;
+    destroyClk(true);
+    deleteDeque(processes);
+    exit(0);
+  }
 }
