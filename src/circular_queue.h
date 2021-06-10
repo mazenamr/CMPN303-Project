@@ -1,3 +1,6 @@
+#ifndef __CIRCULAR_QUEUE_H
+#define __CIRCULAR_QUEUE_H
+
 #include "node.h"
 #include <stdbool.h>
 #include <stdlib.h>
@@ -177,3 +180,5 @@ bool movePrev(CircularQueue *circularQueue, void **data) {
 
   return false;
 }
+
+#endif

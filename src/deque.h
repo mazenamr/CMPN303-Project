@@ -1,3 +1,6 @@
+#ifndef __DEQUE_H
+#define __DEQUE_H
+
 #include "node.h"
 #include <stdbool.h>
 #include <stdlib.h>
@@ -246,3 +249,5 @@ bool peekBack(Deque *deque, void **data) {
 
   return true;
 }
+
+#endif
