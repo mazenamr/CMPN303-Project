@@ -1,14 +1,6 @@
+#include "node.h"
 #include <stdbool.h>
 #include <stdlib.h>
-
-/**
- * @brief  Struct used to represent one element in a deque.
- */
-typedef struct Node {
-  void *data;
-  struct Node *next;
-  struct Node *prev;
-} Node;
 
 /**
  * @brief  Struct used to represent a collection of elements
