@@ -1,6 +1,8 @@
 #include "circular_queue.h"
 #include "deque.h"
+#include <ctype.h>
 #include <signal.h>
+#include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,6 +31,8 @@ typedef enum SCHEDULING_ALGORITHM {
   SRTN,
   RR
 } SCHEDULING_ALGORITHM;
+
+const SCHEDULING_ALGORITHM DEFAULT_SCHEDULING_ALGORITHM = FCFS;
 
 /**
  * @brief  Struct used to represent a process to be scheduled.

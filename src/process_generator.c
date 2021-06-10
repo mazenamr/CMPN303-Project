@@ -42,9 +42,23 @@ int main(int argc, char *argv[]) {
   fclose(inputFile);
 
   // get the scheduling algorithm
-  SCHEDULING_ALGORITHM sch = NONE;
+  char sch[2];
   if (argc > 2) {
-    sch = atoi(argv[2]);
+    if (strlen(argv[2]) > 1 || isdigit(argv[2][0])) {
+      if (atoi(argv[2]) < FCFS || atoi(argv[2]) > RR) {
+        printf("Invalid scheduling algorithm!\n");
+        printHelp();
+        exit(-1);
+      }
+      strcpy(sch, argv[2]);
+    } else {
+      printf("Invalid scheduling algorithm!\n");
+      printHelp();
+      exit(-1);
+    }
+  } else {
+    sch[0] = '0' + DEFAULT_SCHEDULING_ALGORITHM;
+    sch[1] = '\0';
   }
 
   // start the clock process
@@ -56,7 +70,7 @@ int main(int argc, char *argv[]) {
   // start the scheduler process
   pid = fork();
   if (!pid) {
-    execl("bin/scheduler.out", "scheduler.out", NULL);
+    execl("bin/scheduler.out", "scheduler.out", sch, NULL);
   }
 
   // initialize the clock counter
