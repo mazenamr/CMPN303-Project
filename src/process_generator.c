@@ -72,6 +72,7 @@ int main(int argc, char *argv[]) {
            getClk(), currentProcess->runtime, currentProcess->priority);
     // TODO Send the process to the scheduler
   }
+  free(currentProcess);
 
   clearResources(-1);
 }

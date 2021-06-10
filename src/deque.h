@@ -110,9 +110,13 @@ void pushBack(Deque *deque, void *data) {
  * @brief  Removes the node at the front of a deque and
  *         returns True if there was a node to remove.
  *         It copies the removed node data to the memory
- *         location provided in DATA. If NULL is given
- *         instead of a memory location then it replaces
- *         it with a pointer to a copy of the removed node data.
+ *         location provided in DATA.
+ *         If NULL is given instead of a memory location
+ *         then it replaces it with a pointer to a copy
+ *         of the removed node data.
+ *         If (void **)-1 is given instead of a memory
+ *         location then it doesn't make any copies of
+ *         the removed node data.
  *
  * @param  DEQUE pointer to the deque.
  * @param  DATA pointer to memory location
@@ -125,13 +129,16 @@ bool popFront(Deque *deque, void **data) {
     return false;
   }
 
-  if (*data == NULL) {
-    *data = malloc(deque->size);
+  if (data != (void **)-1) {
+    if (*data == NULL) {
+      *data = malloc(deque->size);
+    }
+
+    for (int i = 0; i < deque->size; ++i) {
+      *(char *)((char *)(*data) + i) = *(char *)((char *)head->data + i);
+    }
   }
 
-  for (int i = 0; i < deque->size; ++i) {
-    *(char *)((char *)(*data) + i) = *(char *)((char *)head->data + i);
-  }
 
   deque->head = head->next;
   deque->length -= 1;
@@ -153,9 +160,13 @@ bool popFront(Deque *deque, void **data) {
  * @brief  Removes the node at the back of a deque and
  *         returns True if there was a node to remove.
  *         It copies the removed node data to the memory
- *         location provided in DATA. If NULL is given
- *         instead of a memory location then it replaces
- *         it with a pointer to a copy of the removed node data.
+ *         location provided in DATA.
+ *         If NULL is given instead of a memory location
+ *         then it replaces it with a pointer to a copy
+ *         of the removed node data.
+ *         If (void *)-1 is given instead of a memory
+ *         location then it doesn't make any copies of
+ *         the removed node data.
  *
  * @param  DEQUE pointer to the deque.
  * @param  DATA pointer to memory location
@@ -168,12 +179,14 @@ bool popBack(Deque *deque, void **data) {
     return false;
   }
 
-  if (*data == NULL) {
-    *data = malloc(deque->size);
-  }
+  if (data != (void **)-1) {
+    if (*data == NULL) {
+      *data = malloc(deque->size);
+    }
 
-  for (int i = 0; i < deque->size; ++i) {
-    *(char *)((char *)(*data) + i) = *(char *)((char *)tail->data + i);
+    for (int i = 0; i < deque->size; ++i) {
+      *(char *)((char *)(*data) + i) = *(char *)((char *)tail->data + i);
+    }
   }
 
   deque->tail = tail->prev;
