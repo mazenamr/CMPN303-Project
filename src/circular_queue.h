@@ -80,9 +80,6 @@ void enqueueCQ(CircularQueue *circularQueue, void *data) {
  *         If NULL is given instead of a memory location
  *         then it replaces it with a pointer to a copy
  *         of the removed node data.
- *         If (void *)-1 is given instead of a memory
- *         location then it doesn't make any copies of
- *         the removed node data.
  *
  * @param  CIRCULAR_QUEUE pointer to the circular queue.
  * @param  DATA pointer to memory location
@@ -95,12 +92,26 @@ bool dequeueCQ(CircularQueue *circularQueue, void **data) {
     return false;
   }
 
-  if (data != (void **)-1) {
-    if (*data == NULL) {
-      *data = malloc(circularQueue->size);
-    }
+  if (*data == NULL) {
+    *data = malloc(circularQueue->size);
+  }
 
-    memcpy(*data, node->data, circularQueue->size);
+  memcpy(*data, node->data, circularQueue->size);
+
+  return removeCQ(circularQueue);
+}
+
+/**
+ * @brief  Removes the node at the head of a circular queue and
+ *         returns True if there was a node to remove.
+ *
+ * @param  CIRCULAR_QUEUE pointer to the circular queue.
+ */
+bool removeCQ(CircularQueue *circularQueue) {
+  Node *node = circularQueue->head;
+
+  if (node == NULL) {
+    return false;
   }
 
   circularQueue->head = (node == node->next) ? NULL : node->next;
