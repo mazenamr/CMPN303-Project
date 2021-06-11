@@ -1,12 +1,12 @@
-#include "priority_queue.h"
 #include "circular_queue.h"
 #include "deque.h"
+#include "priority_queue.h"
 #include <ctype.h>
 #include <signal.h>
-#include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/file.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
@@ -45,7 +45,6 @@ typedef enum PROCESS_STATE {
   FINISHED
 } PROCESS_STATE ;
 
-
 /**
  * @brief  Struct used to represent a process to be scheduled.
  */
@@ -57,9 +56,9 @@ typedef struct Process {
 } Process;
 
 /**
- * @brief  Struct to represent the process control block which contains various info about a process.
+ * @brief  Struct to represent the process control block
+ *         which contains various info about a process.
  */
-
 typedef struct PCB
 {
   int id;
@@ -70,7 +69,6 @@ typedef struct PCB
   int starttime;
   PROCESS_STATE state;
 }PCB;
-
 
 // semun used to modify semaphore settings
 typedef union semun {
