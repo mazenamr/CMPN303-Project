@@ -1,3 +1,4 @@
+#include "priority_queue.h"
 #include "circular_queue.h"
 #include "deque.h"
 #include <ctype.h>
