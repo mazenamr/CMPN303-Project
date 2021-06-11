@@ -38,6 +38,12 @@ typedef enum SCHEDULING_ALGORITHM {
   RR
 } SCHEDULING_ALGORITHM;
 
+typedef enum PROCESS_STATE {
+  READY,
+  RUNNING,
+  BLOCKED
+} PROCESS_STATE ;
+
 /**
  * @brief  Struct used to represent a process to be scheduled.
  */
@@ -48,6 +54,7 @@ typedef struct Process {
   int priority;
   int startTime;
   int remainingTime;
+  PROCESS_STATE state;
 } Process;
 
 // semun used to modify semaphore settings
