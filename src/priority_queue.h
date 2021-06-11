@@ -51,7 +51,7 @@ PriorityQueue* newPriorityQueue(size_t size) {
  *
  * @param  PRIORITY_QUEUE pointer to the priority queue.
  * @param  DATA pointer to the data to be inserted.
- * @param  PRIORITY integer value representing the priority of the inserted node
+ * @param  PRIORITY integer value representing the priority of the inserted node.
  */
 void push(PriorityQueue *priorityQueue, void *data, int priority) {
   PriorityNode *start = priorityQueue->head;
