@@ -1,5 +1,7 @@
 #include "headers.h"
 
+void clearResources(int signum);
+
 int main(int argc, char *argv[]) {
   signal(SIGINT, clearResources);
   initClk();
