@@ -52,166 +52,73 @@ int main(int argc, char *argv[]) {
   }
 
   printf("#id\tarrival\ttime\truntime\tpriority\n");
-  switch (atoi(argv[1])) {
-  case FCFS:
-    fcfs();
-    break;
-  case SJF:
-    sjf();
-    break;
-  case HPF:
-    hpf();
-    break;
-  case SRTN:
-    srtn();
-    break;
-  case RR:
-    rr();
-    break;
-  default:
-    printf("Invalid scheduling algorithm!\n");
-    printSchedulingAlgorithms();
-    exit(-1);
+   while (true) {                                                 // Main loop 
+    int tick = getClk();
+    down(semid);
+    for (int i = 0; i < *messageCount; ++i) {
+      Process *currentProcess = buffer + i;
+      printf("%d\t%d\t%d\t%d\t%d\n", currentProcess->id,
+             currentProcess->arrival, getClk(), currentProcess->runtime,
+             currentProcess->priority);
+      addPCB(currentProcess);
+    }
+    *messageCount = 0;
+    up(semid);
+    switch (atoi(argv[1])) {
+    case FCFS:
+      fcfs();
+      break;
+    case SJF:
+      sjf();
+      break;
+    case HPF:
+      hpf();
+      break;
+    case SRTN:
+      srtn();
+      break;
+    case RR:
+      rr();
+      break;
+    default:
+      printf("Invalid scheduling algorithm!\n");
+      printSchedulingAlgorithms();
+      exit(-1);
+    }
+    while (tick == getClk()) {
+      down(semid);
+      if (*messageCount) {
+        up(semid);
+        break;
+      }
+      up(semid);
+      usleep(DELAY_TIME);
+    }
   }
 
   destroyClk(true);
 }
 
 void fcfs() {
-  while (true) {
-    int tick = getClk();
-    down(semid);
-    for (int i = 0; i < *messageCount; ++i) {
-      Process *currentProcess = buffer + i;
-      printf("%d\t%d\t%d\t%d\t%d\n", currentProcess->id,
-             currentProcess->arrival, getClk(), currentProcess->runtime,
-             currentProcess->priority);
-      addPCB(currentProcess);
-    }
-    *messageCount = 0;
-    up(semid);
-    //put your logic here 
-
-    while (tick == getClk()) {
-      down(semid);
-      if (*messageCount) {
-        up(semid);
-        break;
-      }
-      up(semid);
-      usleep(DELAY_TIME);
-    }
-  }
+  
 }
 
 void sjf() {
-  while (true) {
-    int tick = getClk();
-    down(semid);
-    for (int i = 0; i < *messageCount; ++i) {
-      Process *currentProcess = buffer + i;
-      printf("%d\t%d\t%d\t%d\t%d\n", currentProcess->id,
-             currentProcess->arrival, getClk(), currentProcess->runtime,
-             currentProcess->priority);
-      addPCB(currentProcess);
-    }
-    *messageCount = 0;
-    up(semid);
-    //put your logic here 
-
-    while (tick == getClk()) {
-      down(semid);
-      if (*messageCount) {
-        up(semid);
-        break;
-      }
-      up(semid);
-      usleep(DELAY_TIME);
-    }
-  }
+  
 }
 
 void hpf() {
-  while (true) {
-    int tick = getClk();
-    down(semid);
-    for (int i = 0; i < *messageCount; ++i) {
-      Process *currentProcess = buffer + i;
-      printf("%d\t%d\t%d\t%d\t%d\n", currentProcess->id,
-             currentProcess->arrival, getClk(), currentProcess->runtime,
-             currentProcess->priority);
-      addPCB(currentProcess);
-    }
-
-    *messageCount = 0;
-    up(semid);
-    //put your logic here 
-
-    while (tick == getClk()) {
-      down(semid);
-      if (*messageCount) {
-        up(semid);
-        break;
-      }
-      up(semid);
-      usleep(DELAY_TIME);
-    }
-  }
+  
 }
 
-void srtn() {
-  while (true) {
-    int tick = getClk();
-    down(semid);
-    for (int i = 0; i < *messageCount; ++i) {
-      Process *currentProcess = buffer + i;
-      printf("%d\t%d\t%d\t%d\t%d\n", currentProcess->id,
-             currentProcess->arrival, getClk(), currentProcess->runtime,
-             currentProcess->priority);
-      addPCB(currentProcess);
-    }
-    *messageCount = 0;
-    up(semid);
-    //put your logic here 
+void srtn(){
 
-    while (tick == getClk()) {
-      down(semid);
-      if (*messageCount) {
-        up(semid);
-        break;
-      }
-      up(semid);
-      usleep(DELAY_TIME);
-    }
-  }
 }
 
 void rr() {
-  while (true) {
-    int tick = getClk();
-    down(semid);
-    for (int i = 0; i < *messageCount; ++i) {
-      Process *currentProcess = buffer + i;
-      printf("%d\t%d\t%d\t%d\t%d\n", currentProcess->id,
-             currentProcess->arrival, getClk(), currentProcess->runtime,
-             currentProcess->priority);
-      addPCB(currentProcess);
-    }
-    *messageCount = 0;
-    up(semid);
-    //put your logic here 
-    
-    while (tick == getClk()) {
-      down(semid);
-      if (*messageCount) {
-        up(semid);
-        break;
-      }
-      up(semid);
-      usleep(DELAY_TIME);
-    }
-  }
+
 }
+
 
 static inline void setupIPC() {
   shmid = shmget(BUFKEY, sizeof(int) + sizeof(Process) * BUFFER_SIZE, 0444);
