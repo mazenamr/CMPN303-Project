@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
     down(semid);
     while (*messageCount >= BUFFER_SIZE) {
       up(semid);
-      usleep(DELAY_TIME / 100);
+      usleep(DELAY_TIME);
       down(semid);
     }
     memcpy(buffer + (*messageCount)++, currentProcess, sizeof(Process));

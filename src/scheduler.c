@@ -50,7 +50,9 @@ int main(int argc, char *argv[]) {
     printSchedulingAlgorithms();
     exit(-1);
   }
+
   printf("#id\tarrival\ttime\truntime\tpriority\n");
+
   while (true) {
     int tick = getClk();
     down(semid);
@@ -64,6 +66,12 @@ int main(int argc, char *argv[]) {
     up(semid);
 
     while (tick == getClk()) {
+      down(semid);
+      if (*messageCount) {
+        up(semid);
+        break;
+      }
+      up(semid);
       usleep(DELAY_TIME);
     }
   }
