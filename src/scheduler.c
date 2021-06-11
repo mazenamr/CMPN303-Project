@@ -10,14 +10,17 @@ void rr();
 
 int shmid;
 int semid;
-int *shmaddr;
+int *bufferaddr;
 
 int main(int argc, char *argv[]) {
   signal(SIGINT, clearResources);
 
+  setupIPC();
+
   initClk();
 
-  setupIPC();
+  int *messageCount = (int *)bufferaddr;
+  Process *buffer = (Process *)((void *)bufferaddr + sizeof(int));
 
   if (argc < 2) {
     printf("No scheduling algorithm provided!\n");
@@ -37,10 +40,29 @@ int main(int argc, char *argv[]) {
     exit(-1);
   }
 
-  if (atoi(argv[1]) < FCFS || atoi(argv[2]) > RR) {
+  SCHEDULING_ALGORITHM sch = atoi(argv[1]);
+
+  if (sch < FCFS || sch > RR) {
     printf("Invalid scheduling algorithm!\n");
     printSchedulingAlgorithms();
     exit(-1);
+  }
+
+  while (true) {
+    int tick = getClk();
+    down(semid);
+    for (int i = 0; i < *messageCount; ++i) {
+      Process *currentProcess = buffer + i;
+      printf("%d\t%d\t%d\t%d\t%d\n", currentProcess->id,
+             currentProcess->arrival, getClk(), currentProcess->runtime,
+             currentProcess->priority);
+    }
+    *messageCount = 0;
+    up(semid);
+
+    while (tick == getClk()) {
+      usleep(DELAY_TIME);
+    }
   }
 
   switch (atoi(argv[1])) {
@@ -65,7 +87,7 @@ int main(int argc, char *argv[]) {
     exit(-1);
   }
 
-  destroyClk(false);
+  destroyClk(true);
 }
 
 void fcfs() {
@@ -126,8 +148,8 @@ static inline void setupIPC() {
     shmid = shmget(BUFKEY, sizeof(int) + sizeof(Process) * BUFFER_SIZE, 0444);
   }
 
-  shmaddr = (int *)shmat(shmid, (void *)0, 0);
-  if ((long)shmaddr == -1) {
+  bufferaddr = (int *)shmat(shmid, (void *)0, 0);
+  if ((long)bufferaddr == -1) {
     perror("Error in attaching the buffer in scheduler!");
     exit(-1);
   }
@@ -141,6 +163,12 @@ static inline void setupIPC() {
 }
 
 void clearResources(int signum) {
-  destroyClk(false);
+  // clear resources
+  // but only if they weren't already cleared
+  static bool ended = false;
+  if (!ended) {
+    ended = true;
+    destroyClk(true);
+  }
   exit(0);
 }

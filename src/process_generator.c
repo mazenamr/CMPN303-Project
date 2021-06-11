@@ -8,7 +8,7 @@ static inline void getInput(char*);
 Deque *processes;
 int shmid;
 int semid;
-int *shmaddr;
+int *bufferaddr;
 
 int main(int argc, char *argv[]) {
   pid_t pid;
@@ -16,6 +16,9 @@ int main(int argc, char *argv[]) {
   processes = newDeque(sizeof(Process));
 
   setupIPC();
+
+  int *messageCount = (int *)bufferaddr;
+  Process *buffer = (Process *)((void *)bufferaddr + sizeof(int));
 
   signal(SIGINT, clearResources);
 
@@ -37,7 +40,9 @@ int main(int argc, char *argv[]) {
     exit(-1);
   }
 
-  if (atoi(argv[2]) < FCFS || atoi(argv[2]) > RR) {
+  SCHEDULING_ALGORITHM sch = atoi(argv[2]);
+
+  if (sch < FCFS || sch > RR) {
     printf("Invalid scheduling algorithm!\n");
     printHelp();
     exit(-1);
@@ -62,14 +67,12 @@ int main(int argc, char *argv[]) {
 
   // add each process to the buffer on reaching its arrival time
   Process *currentProcess = NULL;
-  int *messageCount = (int *)shmaddr;
-  Process *buffer = (Process *)((void *)shmaddr + sizeof(int));
   while (popFront(processes, (void *)&currentProcess)) {
     while (currentProcess->arrival > getClk()) {
       usleep(DELAY_TIME);
     }
     down(semid);
-    while (*(int *)shmaddr >= BUFFER_SIZE) {
+    while (*messageCount >= BUFFER_SIZE) {
       up(semid);
       usleep(DELAY_TIME / 100);
       down(semid);
@@ -78,6 +81,9 @@ int main(int argc, char *argv[]) {
     up(semid);
   }
   free(currentProcess);
+
+  while (true)
+    usleep(DELAY_TIME);
 
   clearResources(-1);
 }
@@ -93,13 +99,13 @@ static inline void setupIPC() {
     exit(-1);
   }
 
-  shmaddr = (int *)shmat(shmid, (void *)0, 0);
-  if ((long)shmaddr == -1) {
+  bufferaddr = (int *)shmat(shmid, (void *)0, 0);
+  if ((long)bufferaddr == -1) {
     perror("Error in attaching the buffer in process generator!");
     exit(-1);
   }
 
-  *(int *)shmaddr = 0;
+  *(int *)bufferaddr = 0;
 
   semid = semget(SEMKEY, 1, 0644 | IPC_CREAT);
   if ((int)semid == -1) {
