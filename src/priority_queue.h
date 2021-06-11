@@ -71,7 +71,7 @@ void enqueuePQ(PriorityQueue *priorityQueue, void *data, int priority) {
   memcpy(node->data, data, priorityQueue->size);
 
   if (priorityQueue->head == NULL) {
-    node->next = node;
+    node->next = NULL;
     priorityQueue->head = node;
   } else {
     while (start->next != NULL && start->next->priority > priority) {
@@ -115,7 +115,7 @@ bool dequeuePQ(PriorityQueue *priorityQueue, void **data) {
     memcpy(*data, node->data, priorityQueue->size);
   }
 
-  priorityQueue->head = (node == node->next) ? NULL : node->next;
+  priorityQueue->head = node->next;
 
   priorityQueue->length -= 1;
 
