@@ -122,7 +122,7 @@ bool pop(CircularQueue *circularQueue, void **data) {
  *         instead of a memory location then it replaces
  *         it with a pointer to a copy of the head node data.
  *
- * @param  CIRCULAR QUEUE pointer to the circular queue.
+ * @param  CIRCULAR_QUEUE pointer to the circular queue.
  * @param  DATA pointer to memory location
  *         to copy the head node data to.
  */
