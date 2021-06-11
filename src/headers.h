@@ -38,6 +38,13 @@ typedef enum SCHEDULING_ALGORITHM {
   RR
 } SCHEDULING_ALGORITHM;
 
+typedef enum PROCESS_STATE {
+  READY,
+  RUNNING,
+  BLOCKED
+} PROCESS_STATE ;
+
+
 /**
  * @brief  Struct used to represent a process to be scheduled.
  */
@@ -47,6 +54,20 @@ typedef struct Process {
   int runtime;
   int priority;
 } Process;
+
+/**
+ * @brief  Struct to represent the process control block which contains various info abour a process.
+ */
+
+typedef struct PCB
+{
+  int id;
+  int arrival;
+  int runtime;
+  int remainingtime;
+  int waitingtime;
+  PROCESS_STATE state;
+}PCB;
 
 // semun used to modify semaphore settings
 typedef union semun {

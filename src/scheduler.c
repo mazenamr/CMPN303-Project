@@ -12,7 +12,8 @@ int shmid;
 int semid;
 int *bufferaddr;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) 
+{
   signal(SIGINT, clearResources);
 
   setupIPC();
@@ -47,7 +48,7 @@ int main(int argc, char *argv[]) {
     printSchedulingAlgorithms();
     exit(-1);
   }
-
+  printf("#id\tarrival\ttime\truntime\tpriority\n");
   while (true) {
     int tick = getClk();
     down(semid);
@@ -93,6 +94,7 @@ int main(int argc, char *argv[]) {
 void fcfs() {
   while (true) {
     int tick = getClk();
+    
 
     while (tick == getClk()) {
       usleep(DELAY_TIME);
@@ -140,7 +142,8 @@ void rr() {
   }
 }
 
-static inline void setupIPC() {
+static inline void setupIPC() 
+{
   shmid = shmget(BUFKEY, sizeof(int) + sizeof(Process) * BUFFER_SIZE, 0444);
   while ((int)shmid == -1) {
     printf("Wait! The buffer not initialized yet!\n");
@@ -162,7 +165,8 @@ static inline void setupIPC() {
   }
 }
 
-void clearResources(int signum) {
+void clearResources(int signum) 
+{
   // clear resources
   // but only if they weren't already cleared
   static bool ended = false;
