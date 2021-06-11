@@ -21,15 +21,14 @@
 #define SHKEY 300
 #define BUFKEY 400
 #define SEMKEY 500
-#define PROCESS_TABLE_SIZE 4096
 
 // 1,000,000 = 1 sec
-const int CLOCK_TICK_DURATION = 100000;
-const int DELAY_TIME = CLOCK_TICK_DURATION / 10000;
+#define CLOCK_TICK_DURATION 100000
+#define DELAY_TIME 50
 
-const int BUFFER_SIZE = 128;
-const int MAX_LINE_SIZE = 256;
-
+#define BUFFER_SIZE 128
+#define MAX_LINE_SIZE 256
+#define PROCESS_TABLE_SIZE 4096
 
 typedef enum SCHEDULING_ALGORITHM {
   NONE,
@@ -66,10 +65,10 @@ typedef struct PCB
   int id;
   int arrival;
   int runtime;
-  int remainingtime;
-  int waitingtime;
-  int starttime;
   int priority;
+  int remainingTime;
+  int waitingTime;
+  int startTime;
   PROCESS_STATE state;
 }PCB;
 
