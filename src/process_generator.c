@@ -60,8 +60,7 @@ int main(int argc, char *argv[]) {
   // initialize the clock counter
   initClk();
 
-  // print the info of each process on reaching its arrival time
-  // and add it to the buffer
+  // add each process to the buffer on reaching its arrival time
   Process *currentProcess = NULL;
   int *messageCount = (int *)shmaddr;
   Process *buffer = (Process *)((void *)shmaddr + sizeof(int));
@@ -72,7 +71,7 @@ int main(int argc, char *argv[]) {
     down(semid);
     while (*(int *)shmaddr >= BUFFER_SIZE) {
       up(semid);
-      usleep(DELAY_TIME/100);
+      usleep(DELAY_TIME / 100);
       down(semid);
     }
     memcpy(buffer + (*messageCount)++, currentProcess, sizeof(Process));
