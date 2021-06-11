@@ -15,6 +15,8 @@ int main(int argc, char *argv[]) {
 
   processes = newDeque(sizeof(Process));
 
+  setupIPC();
+
   signal(SIGINT, clearResources);
 
   if (argc < 3) {
@@ -86,7 +88,7 @@ static inline void setupIPC() {
   }
 
   shmaddr = (int *)shmat(shmid, (void *)0, 0);
-  if ((int)shmaddr == -1) {
+  if ((long)shmaddr == -1) {
     perror("Error in attaching the buffer in process generator!");
     exit(-1);
   }
