@@ -46,6 +46,8 @@ typedef struct Process {
   int arrival;
   int runtime;
   int priority;
+  int startTime;
+  int remainingTime;
 } Process;
 
 // semun used to modify semaphore settings

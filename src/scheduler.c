@@ -51,6 +51,7 @@ int main(int argc, char *argv[]) {
   while (true) {
     int tick = getClk();
     down(semid);
+    printf("#id\tarrival\ttime\truntime\tpriority\n");
     for (int i = 0; i < *messageCount; ++i) {
       Process *currentProcess = buffer + i;
       printf("%d\t%d\t%d\t%d\t%d\n", currentProcess->id,
