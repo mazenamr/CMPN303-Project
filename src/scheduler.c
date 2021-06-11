@@ -88,9 +88,9 @@ void fcfs() {
              currentProcess->priority);
       addPCB(currentProcess);
     }
-
     *messageCount = 0;
     up(semid);
+    //put your logic here 
 
     while (tick == getClk()) {
       down(semid);
@@ -107,8 +107,25 @@ void fcfs() {
 void sjf() {
   while (true) {
     int tick = getClk();
+    down(semid);
+    for (int i = 0; i < *messageCount; ++i) {
+      Process *currentProcess = buffer + i;
+      printf("%d\t%d\t%d\t%d\t%d\n", currentProcess->id,
+             currentProcess->arrival, getClk(), currentProcess->runtime,
+             currentProcess->priority);
+      addPCB(currentProcess);
+    }
+    *messageCount = 0;
+    up(semid);
+    //put your logic here 
 
     while (tick == getClk()) {
+      down(semid);
+      if (*messageCount) {
+        up(semid);
+        break;
+      }
+      up(semid);
       usleep(DELAY_TIME);
     }
   }
@@ -117,8 +134,26 @@ void sjf() {
 void hpf() {
   while (true) {
     int tick = getClk();
+    down(semid);
+    for (int i = 0; i < *messageCount; ++i) {
+      Process *currentProcess = buffer + i;
+      printf("%d\t%d\t%d\t%d\t%d\n", currentProcess->id,
+             currentProcess->arrival, getClk(), currentProcess->runtime,
+             currentProcess->priority);
+      addPCB(currentProcess);
+    }
+
+    *messageCount = 0;
+    up(semid);
+    //put your logic here 
 
     while (tick == getClk()) {
+      down(semid);
+      if (*messageCount) {
+        up(semid);
+        break;
+      }
+      up(semid);
       usleep(DELAY_TIME);
     }
   }
@@ -127,8 +162,25 @@ void hpf() {
 void srtn() {
   while (true) {
     int tick = getClk();
+    down(semid);
+    for (int i = 0; i < *messageCount; ++i) {
+      Process *currentProcess = buffer + i;
+      printf("%d\t%d\t%d\t%d\t%d\n", currentProcess->id,
+             currentProcess->arrival, getClk(), currentProcess->runtime,
+             currentProcess->priority);
+      addPCB(currentProcess);
+    }
+    *messageCount = 0;
+    up(semid);
+    //put your logic here 
 
     while (tick == getClk()) {
+      down(semid);
+      if (*messageCount) {
+        up(semid);
+        break;
+      }
+      up(semid);
       usleep(DELAY_TIME);
     }
   }
@@ -137,8 +189,25 @@ void srtn() {
 void rr() {
   while (true) {
     int tick = getClk();
-
+    down(semid);
+    for (int i = 0; i < *messageCount; ++i) {
+      Process *currentProcess = buffer + i;
+      printf("%d\t%d\t%d\t%d\t%d\n", currentProcess->id,
+             currentProcess->arrival, getClk(), currentProcess->runtime,
+             currentProcess->priority);
+      addPCB(currentProcess);
+    }
+    *messageCount = 0;
+    up(semid);
+    //put your logic here 
+    
     while (tick == getClk()) {
+      down(semid);
+      if (*messageCount) {
+        up(semid);
+        break;
+      }
+      up(semid);
       usleep(DELAY_TIME);
     }
   }
