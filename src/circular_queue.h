@@ -39,6 +39,7 @@ void deleteCircularQueue(CircularQueue *circularQueue) {
   for (int i = 0; i < circularQueue->length; ++i) {
     Node *prev = node;
     node = node->next;
+    free(prev->data);
     free(prev);
   }
   free(circularQueue);

@@ -42,6 +42,7 @@ void deleteDeque(Deque *deque) {
   for (int i = 0; i < deque->length; ++i) {
     Node *prev = node;
     node = node->next;
+    free(prev->data);
     free(prev);
   }
   free(deque);

@@ -49,6 +49,7 @@ void deletePriorityQueue(PriorityQueue *priorityQueue) {
   for (int i = 0; i < priorityQueue->length; ++i) {
     PriorityNode *prev = node;
     node = node->next;
+    free(prev->data);
     free(prev);
   }
   free(priorityQueue);
