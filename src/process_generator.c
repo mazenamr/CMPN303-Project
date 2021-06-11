@@ -60,16 +60,22 @@ int main(int argc, char *argv[]) {
   // initialize the clock counter
   initClk();
 
-  // print the info of each process on reaching its arrival time
+  // add each process to the buffer on reaching its arrival time
   Process *currentProcess = NULL;
+  int *messageCount = (int *)shmaddr;
+  Process *buffer = (Process *)((void *)shmaddr + sizeof(int));
   while (popFront(processes, (void *)&currentProcess)) {
     while (currentProcess->arrival > getClk()) {
       usleep(DELAY_TIME);
     }
-    printf("%d\t%d\t%d\t%d\t%d\n", currentProcess->id, currentProcess->arrival,
-           getClk(), currentProcess->runtime, currentProcess->priority);
-    // TODO: setup the shared memory and semaphores
-    // TODO: send the process to the scheduler
+    down(semid);
+    while (*(int *)shmaddr >= BUFFER_SIZE) {
+      up(semid);
+      usleep(DELAY_TIME / 100);
+      down(semid);
+    }
+    memcpy(buffer + (*messageCount)++, currentProcess, sizeof(Process));
+    up(semid);
   }
   free(currentProcess);
 
@@ -92,6 +98,8 @@ static inline void setupIPC() {
     perror("Error in attaching the buffer in process generator!");
     exit(-1);
   }
+
+  *(int *)shmaddr = 0;
 
   semid = semget(SEMKEY, 1, 0644 | IPC_CREAT);
   if ((int)semid == -1) {
