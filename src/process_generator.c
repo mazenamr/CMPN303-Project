@@ -28,18 +28,6 @@ int main(int argc, char *argv[]) {
     exit(-1);
   }
 
-  if (strlen(argv[2]) > 1) {
-    printf("Invalid scheduling algorithm!\n");
-    printHelp();
-    exit(-1);
-  }
-
-  if (!isdigit(argv[2][0])) {
-    printf("Invalid scheduling algorithm!\n");
-    printHelp();
-    exit(-1);
-  }
-
   SCHEDULING_ALGORITHM sch = atoi(argv[2]);
 
   if (sch < FCFS || sch > RR) {
@@ -82,8 +70,9 @@ int main(int argc, char *argv[]) {
   }
   free(currentProcess);
 
-  while (true)
+  while (true) {
     usleep(DELAY_TIME);
+  }
 
   clearResources(-1);
 }

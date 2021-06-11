@@ -31,18 +31,6 @@ int main(int argc, char *argv[]) {
     exit(-1);
   }
 
-  if (strlen(argv[1]) > 1) {
-    printf("Invalid scheduling algorithm!\n");
-    printSchedulingAlgorithms();
-    exit(-1);
-  }
-
-  if (!isdigit(argv[1][0])) {
-    printf("Invalid scheduling algorithm!\n");
-    printSchedulingAlgorithms();
-    exit(-1);
-  }
-
   SCHEDULING_ALGORITHM sch = atoi(argv[1]);
 
   if (sch < FCFS || sch > RR) {
@@ -96,29 +84,23 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  destroyClk(true);
+  clearResources(-1);
 }
 
 void fcfs() {
-  
 }
 
 void sjf() {
-  
 }
 
 void hpf() {
-  
 }
 
 void srtn(){
-
 }
 
 void rr() {
-
 }
-
 
 static inline void setupIPC() {
   shmid = shmget(BUFKEY, sizeof(int) + sizeof(Process) * BUFFER_SIZE, 0444);

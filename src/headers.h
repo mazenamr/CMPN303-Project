@@ -155,16 +155,16 @@ bool trydown(int sem) {
 }
 
 void printSchedulingAlgorithms() {
-    printf("\nScheduling algorithms available:\n");
-    printf("\t1. First Come First Serve (FCFS)\n");
-    printf("\t2. Shortest Job First (SJF)\n");
-    printf("\t3. Preemptive Highest Priority First (HPF)\n");
-    printf("\t4. Shortest Remaining Time Next (SRTN)\n");
-    printf("\t5. Round Robin (RR)\n");
+  printf("\nScheduling algorithms available:\n");
+  printf("\t1. First Come First Serve (FCFS)\n");
+  printf("\t2. Shortest Job First (SJF)\n");
+  printf("\t3. Preemptive Highest Priority First (HPF)\n");
+  printf("\t4. Shortest Remaining Time Next (SRTN)\n");
+  printf("\t5. Round Robin (RR)\n");
 }
 
 void printHelp() {
-    printf("Usage: process_generator.out [input file] [scheduling algorithm]\n");
-    printSchedulingAlgorithms();
-    printf("ex: process_generator.out input.txt 2\n");
+  printf("Usage: process_generator.out [input file] [scheduling algorithm]\n");
+  printSchedulingAlgorithms();
+  printf("ex: process_generator.out input.txt 2\n");
 }
