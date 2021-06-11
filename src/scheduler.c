@@ -11,19 +11,18 @@ void rr();
 int shmid;
 int semid;
 int *bufferaddr;
-Deque *PCBList;
+PCB *processTable[PROCESS_TABLE_SIZE];
+int *messageCount;
+Process *buffer;
 
 int main(int argc, char *argv[]) {
   signal(SIGINT, clearResources);
 
   setupIPC();
+  messageCount = (int *)bufferaddr;
+  buffer = (Process *)((void *)bufferaddr + sizeof(int));
 
   initClk();
-
-  int *messageCount = (int *)bufferaddr;
-  Process *buffer = (Process *)((void *)bufferaddr + sizeof(int));
-
-  PCBList = newDeque(sizeof(PCB));
 
   if (argc < 2) {
     printf("No scheduling algorithm provided!\n");
@@ -52,30 +51,6 @@ int main(int argc, char *argv[]) {
   }
 
   printf("#id\tarrival\ttime\truntime\tpriority\n");
-
-  while (true) {
-    int tick = getClk();
-    down(semid);
-    for (int i = 0; i < *messageCount; ++i) {
-      Process *currentProcess = buffer + i;
-      printf("%d\t%d\t%d\t%d\t%d\n", currentProcess->id,
-             currentProcess->arrival, getClk(), currentProcess->runtime,
-             currentProcess->priority);
-    }
-    *messageCount = 0;
-    up(semid);
-
-    while (tick == getClk()) {
-      down(semid);
-      if (*messageCount) {
-        up(semid);
-        break;
-      }
-      up(semid);
-      usleep(DELAY_TIME);
-    }
-  }
-
   switch (atoi(argv[1])) {
   case FCFS:
     fcfs();
@@ -104,9 +79,24 @@ int main(int argc, char *argv[]) {
 void fcfs() {
   while (true) {
     int tick = getClk();
-
+    down(semid);
+    for (int i = 0; i < *messageCount; ++i) {
+      Process *currentProcess = buffer + i;
+      printf("%d\t%d\t%d\t%d\t%d\n", currentProcess->id,
+             currentProcess->arrival, getClk(), currentProcess->runtime,
+             currentProcess->priority);
+      addPCB(currentProcess);
+    }
+    *messageCount = 0;
+    up(semid);
 
     while (tick == getClk()) {
+      down(semid);
+      if (*messageCount) {
+        up(semid);
+        break;
+      }
+      up(semid);
       usleep(DELAY_TIME);
     }
   }
@@ -172,6 +162,18 @@ static inline void setupIPC() {
     sleep(1);
     semid = semget(SEMKEY, 1, 0444);
   }
+}
+
+void addPCB(Process *p)
+{
+  processTable[p->id] = malloc(sizeof(PCB));
+  processTable[p->id]->id = p->id;
+  processTable[p->id]->arrival = p->arrival;
+  processTable[p->id]->runtime = p->runtime;
+  processTable[p->id]->priority = p->priority;
+  processTable[p->id]->waitingtime = 0;
+  processTable[p->id]->starttime = -1;
+  processTable[p->id]->remainingtime = p->runtime;
 }
 
 void clearResources(int signum) {

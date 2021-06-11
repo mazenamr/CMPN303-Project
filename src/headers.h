@@ -22,12 +22,14 @@
 #define BUFKEY 400
 #define SEMKEY 500
 
+
 // 1,000,000 = 1 sec
 const int CLOCK_TICK_DURATION = 100000;
 const int DELAY_TIME = CLOCK_TICK_DURATION / 10000;
 
-const int BUFFER_SIZE = 1024;
+const int BUFFER_SIZE = 128;
 const int MAX_LINE_SIZE = 256;
+const int PROCESS_TABLE_SIZE = 4096;
 
 typedef enum SCHEDULING_ALGORITHM {
   NONE,
@@ -67,6 +69,7 @@ typedef struct PCB
   int remainingtime;
   int waitingtime;
   int starttime;
+  int priority;
   PROCESS_STATE state;
 }PCB;
 

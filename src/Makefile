@@ -25,4 +25,4 @@ debug:
 
 run:
 	./bin/test_generator.out ./bin/processes.txt 16
-	./bin/process_generator.out ./bin/processes.txt 3
+	./bin/process_generator.out ./bin/processes.txt 1
