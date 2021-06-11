@@ -32,8 +32,6 @@ typedef enum SCHEDULING_ALGORITHM {
   RR
 } SCHEDULING_ALGORITHM;
 
-const SCHEDULING_ALGORITHM DEFAULT_SCHEDULING_ALGORITHM = FCFS;
-
 /**
  * @brief  Struct used to represent a process to be scheduled.
  */
@@ -82,7 +80,12 @@ void destroyClk(bool terminateAll) {
 }
 
 void printHelp() {
-    printf("Usage: process_generator.out input.txt [scheduling algorithm]\n");
+    printf("Usage: process_generator.out [input file] [scheduling algorithm]\n");
+    printSchedulingAlgorithms();
+    printf("ex: process_generator.out input.txt 2\n");
+}
+
+void printSchedulingAlgorithms() {
     printf("\nScheduling algorithms available:\n");
     printf("\t1. First Come First Serve (FCFS)\n");
     printf("\t2. Shortest Job First (SJF)\n");

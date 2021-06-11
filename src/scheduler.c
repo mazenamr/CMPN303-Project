@@ -1,9 +1,10 @@
 #include "headers.h"
 
-void clearResources(int signum);
+void clearResources(int);
 
 int main(int argc, char *argv[]) {
   signal(SIGINT, clearResources);
+
   initClk();
 
   while (true) {
@@ -13,7 +14,7 @@ int main(int argc, char *argv[]) {
     // TODO: handle the processes that arrive
 
     while (tick == getClk()) {
-      usleep(DELAY_TIME/5);
+      usleep(DELAY_TIME);
     }
   }
 

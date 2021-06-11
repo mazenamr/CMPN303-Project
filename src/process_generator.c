@@ -1,65 +1,42 @@
 #include "headers.h"
 
 void clearResources(int);
+static inline void getInput(char*);
+
 Deque *processes;
 
 int main(int argc, char *argv[]) {
   pid_t pid;
+
   processes = newDeque(sizeof(Process));
 
   signal(SIGINT, clearResources);
 
-  if (argc < 2) {
+  if (argc < 3) {
     printf("Too few arguments!\n");
     printHelp();
     exit(-1);
   }
 
-  FILE *inputFile = fopen(argv[1], "r");
-
-  if (inputFile == NULL) {
-    printf("Couldn't open input file %s!\n", argv[1]);
+  if (strlen(argv[2]) > 1) {
+    printf("Invalid scheduling algorithm!\n");
+    printHelp();
     exit(-1);
   }
 
-  // read the input file line by line and create a process
-  // for each line that doesn't start with #
-  char line[255];
-  int lineNumber = 1;
-  while (fscanf(inputFile, " %[^\n]s", line) != EOF) {
-    Process process;
-    if (line[0] != '#') {
-      if (sscanf(line, "%d\t%d\t%d\t%d", &(process.id), &(process.arrival),
-                 &(process.runtime), &(process.priority)) < 4) {
-        printf("Error in input file line %d!\n", lineNumber);
-        exit(-1);
-      }
-      pushBack(processes, &process);
-    }
-    ++lineNumber;
+  if (!isdigit(argv[2][0])) {
+    printf("Invalid scheduling algorithm!\n");
+    printHelp();
+    exit(-1);
   }
 
-  fclose(inputFile);
-
-  // get the scheduling algorithm
-  char sch[2];
-  if (argc > 2) {
-    if (strlen(argv[2]) > 1 || isdigit(argv[2][0])) {
-      if (atoi(argv[2]) < FCFS || atoi(argv[2]) > RR) {
-        printf("Invalid scheduling algorithm!\n");
-        printHelp();
-        exit(-1);
-      }
-      strcpy(sch, argv[2]);
-    } else {
-      printf("Invalid scheduling algorithm!\n");
-      printHelp();
-      exit(-1);
-    }
-  } else {
-    sch[0] = '0' + DEFAULT_SCHEDULING_ALGORITHM;
-    sch[1] = '\0';
+  if (atoi(argv[2]) < FCFS || atoi(argv[2]) > RR) {
+    printf("Invalid scheduling algorithm!\n");
+    printHelp();
+    exit(-1);
   }
+
+  getInput(argv[1]);
 
   // start the clock process
   pid = fork();
@@ -70,7 +47,7 @@ int main(int argc, char *argv[]) {
   // start the scheduler process
   pid = fork();
   if (!pid) {
-    execl("bin/scheduler.out", "scheduler.out", sch, NULL);
+    execl("bin/scheduler.out", "scheduler.out", argv[2], NULL);
   }
 
   // initialize the clock counter
@@ -90,6 +67,34 @@ int main(int argc, char *argv[]) {
   free(currentProcess);
 
   clearResources(-1);
+}
+
+static inline void getInput(char *file) {
+  FILE *inputFile = fopen(file, "r");
+
+  if (inputFile == NULL) {
+    printf("Couldn't open input file %s!\n", file);
+    exit(-1);
+  }
+
+  // read the input file line by line and create a process
+  // for each line that doesn't start with #
+  char line[MAX_LINE_SIZE];
+  int lineNumber = 1;
+  while (fscanf(inputFile, " %[^\n]s", line) != EOF) {
+    Process process;
+    if (line[0] != '#') {
+      if (sscanf(line, "%d\t%d\t%d\t%d", &(process.id), &(process.arrival),
+                 &(process.runtime), &(process.priority)) < 4) {
+        printf("Error in input file line %d!\n", lineNumber);
+        exit(-1);
+      }
+      pushBack(processes, &process);
+    }
+    ++lineNumber;
+  }
+
+  fclose(inputFile);
 }
 
 void clearResources(int signum) {
