@@ -1,10 +1,19 @@
 #ifndef __PRIORITY_QUEUE_H
 #define __PRIORITY_QUEUE_H
 
-#include "priority_node.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+
+/**
+ * @brief  Struct used to represent one element
+ *         in a priority queue.
+ */
+typedef struct PriorityNode {
+  void *data;
+  int priority;
+  struct PriorityNode *next;
+} PriorityNode;
 
 /**
  * @brief  Struct used to represent a collection of elements
@@ -35,7 +44,7 @@ PriorityQueue* newPriorityQueue(size_t size) {
  *
  * @param  PRIORITY_QUEUE the priority queue to be freed.
  */
- void deletePriorityQueue(PriorityQueue* priorityQueue) {
+void deletePriorityQueue(PriorityQueue *priorityQueue) {
   PriorityNode *node = priorityQueue->head;
   for (int i = 0; i < priorityQueue->length; ++i) {
     PriorityNode *prev = node;
@@ -53,7 +62,7 @@ PriorityQueue* newPriorityQueue(size_t size) {
  * @param  DATA pointer to the data to be inserted.
  * @param  PRIORITY integer value representing the priority of the inserted node.
  */
-void push(PriorityQueue *priorityQueue, void *data, int priority) {
+void enqueuePQ(PriorityQueue *priorityQueue, void *data, int priority) {
   PriorityNode *start = priorityQueue->head;
   PriorityNode *node = (PriorityNode *)malloc(sizeof(PriorityNode));
   node->data = malloc(priorityQueue->size);
@@ -66,7 +75,7 @@ void push(PriorityQueue *priorityQueue, void *data, int priority) {
     priorityQueue->head = node;
   } else {
     while (start->next != NULL && start->next->priority > priority) {
-        start = start->next;
+      start = start->next;
     }
     node->next = start->next;
     start->next = node;
@@ -91,7 +100,7 @@ void push(PriorityQueue *priorityQueue, void *data, int priority) {
  * @param  DATA pointer to memory location
  *         to copy the removed node data to.
  */
-bool pop(PriorityQueue *priorityQueue, void **data) {
+bool dequeuePQ(PriorityQueue *priorityQueue, void **data) {
   PriorityNode *node = priorityQueue->head;
 
   if (node == NULL) {
@@ -125,7 +134,7 @@ bool pop(PriorityQueue *priorityQueue, void **data) {
  * @param  DATA pointer to memory location
  *         to copy the head node data to.
  */
-bool peek(PriorityQueue *priorityQueue, void **data) {
+bool peekPQ(PriorityQueue *priorityQueue, void **data) {
   PriorityNode *node = priorityQueue->head;
 
   if (node == NULL) {

@@ -51,7 +51,7 @@ void deleteCircularQueue(CircularQueue *circularQueue) {
  * @param  CIRCULAR_QUEUE pointer to the circular queue.
  * @param  DATA pointer to the data to be inserted.
  */
-void push(CircularQueue *circularQueue, void *data) {
+void enqueueCQ(CircularQueue *circularQueue, void *data) {
   Node *node = (Node *)malloc(sizeof(Node));
   node->data = malloc(circularQueue->size);
 
@@ -87,7 +87,7 @@ void push(CircularQueue *circularQueue, void *data) {
  * @param  DATA pointer to memory location
  *         to copy the removed node data to.
  */
-bool pop(CircularQueue *circularQueue, void **data) {
+bool dequeueCQ(CircularQueue *circularQueue, void **data) {
   Node *node = circularQueue->head;
 
   if (node == NULL) {
@@ -126,7 +126,7 @@ bool pop(CircularQueue *circularQueue, void **data) {
  * @param  DATA pointer to memory location
  *         to copy the head node data to.
  */
-bool peek(CircularQueue *circularQueue, void **data) {
+bool peekCQ(CircularQueue *circularQueue, void **data) {
   Node *node = circularQueue->head;
 
   if (node == NULL) {
@@ -155,7 +155,7 @@ bool peek(CircularQueue *circularQueue, void **data) {
  *         to copy the head node data to.
  */
 bool moveNext(CircularQueue *circularQueue, void **data) {
-  if (peek(circularQueue, data)) {
+  if (peekCQ(circularQueue, data)) {
     circularQueue->head = circularQueue->head->next;
     return true;
   }
@@ -176,7 +176,7 @@ bool moveNext(CircularQueue *circularQueue, void **data) {
  *         to copy the head node data to.
  */
 bool movePrev(CircularQueue *circularQueue, void **data) {
-  if (peek(circularQueue, data)) {
+  if (peekCQ(circularQueue, data)) {
     circularQueue->head = circularQueue->head->prev;
     return true;
   }

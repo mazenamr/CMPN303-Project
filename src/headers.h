@@ -24,7 +24,7 @@
 
 // 1,000,000 = 1 sec
 const int CLOCK_TICK_DURATION = 500000;
-const int DELAY_TIME = CLOCK_TICK_DURATION / 10;
+const int DELAY_TIME = CLOCK_TICK_DURATION / 100;
 
 const int BUFFER_SIZE = 1024;
 const int MAX_LINE_SIZE = 256;
