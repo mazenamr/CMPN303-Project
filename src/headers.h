@@ -18,10 +18,15 @@
 #include <unistd.h>
 
 #define SHKEY 300
+#define BUFKEY 400
+#define SEMKEY 500
 
 // 1,000,000 = 1 sec
 const int CLOCK_TICK_DURATION = 500000;
 const int DELAY_TIME = CLOCK_TICK_DURATION / 10;
+
+const int BUFFER_SIZE = 1024;
+const int MAX_LINE_SIZE = 256;
 
 typedef enum SCHEDULING_ALGORITHM {
   NONE,
@@ -41,6 +46,15 @@ typedef struct Process {
   int runtime;
   int priority;
 } Process;
+
+// semun used to modify semaphore settings
+typedef union semun {
+  int val;               /* Value for SETVAL */
+  struct semid_ds *buf;  /* Buffer for IPC_STAT, IPC_SET */
+  unsigned short *array; /* Array for GETALL, SETALL */
+  struct seminfo *__buf; /* Buffer for IPC_INFO
+                            (Linux-specific) */
+} semun;
 
 ///==============================
 // don't mess with this variable//
@@ -77,6 +91,42 @@ void destroyClk(bool terminateAll) {
   if (terminateAll) {
     killpg(getpgrp(), SIGINT);
   }
+}
+
+void down(int sem) {
+  struct sembuf p_op;
+
+  p_op.sem_num = 0;
+  p_op.sem_op = -1;
+  p_op.sem_flg = !IPC_NOWAIT;
+
+  if (semop(sem, &p_op, 1) == -1) {
+    perror("Error in down()");
+    exit(-1);
+  }
+}
+
+void up(int sem) {
+  struct sembuf p_op;
+
+  p_op.sem_num = 0;
+  p_op.sem_op = 1;
+  p_op.sem_flg = !IPC_NOWAIT;
+
+  if (semop(sem, &p_op, 1) == -1) {
+    perror("Error in up()");
+    exit(-1);
+  }
+}
+
+bool trydown(int sem) {
+  struct sembuf p_op;
+
+  p_op.sem_num = 0;
+  p_op.sem_op = -1;
+  p_op.sem_flg = IPC_NOWAIT;
+
+  return (semop(sem, &p_op, 1) != -1);
 }
 
 void printHelp() {

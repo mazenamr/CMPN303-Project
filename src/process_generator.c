@@ -1,9 +1,14 @@
 #include "headers.h"
 
 void clearResources(int);
+
+static inline void setupIPC();
 static inline void getInput(char*);
 
 Deque *processes;
+int shmid;
+int semid;
+int *shmaddr;
 
 int main(int argc, char *argv[]) {
   pid_t pid;
@@ -67,6 +72,35 @@ int main(int argc, char *argv[]) {
   free(currentProcess);
 
   clearResources(-1);
+}
+
+static inline void setupIPC() {
+  semun s;
+  s.val = 1;
+
+  shmid = shmget(BUFKEY, sizeof(int) + sizeof(Process) * BUFFER_SIZE,
+                 IPC_CREAT | 0644);
+  if ((int)shmid == -1) {
+    perror("Error in creating buffer!");
+    exit(-1);
+  }
+
+  shmaddr = (int *)shmat(shmid, (void *)0, 0);
+  if ((int)shmaddr == -1) {
+    perror("Error in attaching the buffer in process generator!");
+    exit(-1);
+  }
+
+  semid = semget(SEMKEY, 1, 0644 | IPC_CREAT);
+  if ((int)semid == -1) {
+    perror("Error in creating semaphore!");
+    exit(-1);
+  }
+
+  if ((int)semctl(semid, 0, SETVAL, s) == -1) {
+    perror("Error in semctl!");
+    exit(-1);
+  }
 }
 
 static inline void getInput(char *file) {
