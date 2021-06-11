@@ -7,6 +7,7 @@ void sjf();
 void hpf();
 void srtn();
 void rr();
+void addPCB(Process*p);
 
 int shmid;
 int semid;
@@ -87,6 +88,7 @@ void fcfs() {
              currentProcess->priority);
       addPCB(currentProcess);
     }
+
     *messageCount = 0;
     up(semid);
 
@@ -164,8 +166,7 @@ static inline void setupIPC() {
   }
 }
 
-void addPCB(Process *p)
-{
+void addPCB(Process *p){
   processTable[p->id] = malloc(sizeof(PCB));
   processTable[p->id]->id = p->id;
   processTable[p->id]->arrival = p->arrival;
