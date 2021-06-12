@@ -12,6 +12,7 @@ void hpf();
 void srtn();
 void rr();
 
+
 int shmid;
 int bufsemid;
 int procsemid;
@@ -197,12 +198,53 @@ void sjf() {
 }
 
 void hpf() {
+   if (priorityQueue == NULL) {
+    priorityQueue = newPriorityQueue(sizeof(ProcessInfo));
+  }
+
+  ProcessInfo *processInfo = NULL;
+  while (popFront(arrived, (void **)&processInfo)) {
+    enqueuePQ(priorityQueue, processInfo, -processTable[processInfo->id]->priority);
+  }
+  free(processInfo);
+
+  if (priorityQueue->head != NULL) {
+    PriorityNode* process = priorityQueue->head->next;
+    while (process!= NULL) {
+      int id = ((ProcessInfo *)(process->data))->id;
+      processTable[id]->waitingTime += 1;
+      process = process->next;
+    }
+  } else {
+    return;
+  }
+
+  if (runningProcess == NULL) {
+    if (!peekPQ(priorityQueue, (void **)&runningProcess)) {
+      return;
+    }
+    startProcess(runningProcess);
+  }
+
+  PCB *pcb = processTable[runningProcess->id];
+
+  if (!pcb->remainingTime) {
+    removePQ(priorityQueue);
+    removeProcess(runningProcess);
+    runningProcess = NULL;
+  } else {
+    pcb->remainingTime -= 1;
+    pcb->executionTime += 1;
+  }
+
 }
 
 void srtn(){
+
 }
 
 void rr() {
+
 }
 
 static inline void setupIPC() {
