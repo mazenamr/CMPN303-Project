@@ -17,16 +17,19 @@ int bufsemid;
 int procsemid;
 int *bufferaddr;
 
-PCB *processTable[PROCESS_TABLE_SIZE];
 ProcessInfo *runningProcess = NULL;
-Deque *arrived = NULL;                  // equvialent to the ready queue 
+Deque *arrived = NULL;
 Deque *deque = NULL;
 PriorityQueue *priorityQueue = NULL;
 CircularQueue *circularQueue = NULL;
-int counter = 0;
+
+PCB **processTable = NULL;
+int processTableSize = PROCESS_TABLE_SIZE;
 
 int main(int argc, char *argv[]) {
   setupIPC();
+
+  processTable = malloc(processTableSize * sizeof(PCB *));
 
   int *messageCount = (int *)bufferaddr;
   Process *buffer = (Process *)((void *)bufferaddr + sizeof(int));
@@ -59,6 +62,16 @@ int main(int argc, char *argv[]) {
     down(bufsemid);
     for (int i = 0; i < *messageCount; ++i) {
       Process *currentProcess = buffer + i;
+      if (currentProcess->id >= processTableSize) {
+        int oldSize = processTableSize;
+        while (currentProcess->id >= processTableSize) {
+          processTableSize *= 2;
+        }
+        PCB **newProcessTable = malloc(processTableSize * sizeof(PCB *));
+        memcpy(newProcessTable, processTable, oldSize * sizeof(PCB *));
+        free(processTable);
+        processTable = newProcessTable;
+      }
       ProcessInfo newProcess = addProcess(currentProcess);
       pushBack(arrived, &newProcess);
     }
@@ -290,6 +303,9 @@ void clearResources(int signum) {
     }
     if (circularQueue != NULL) {
       deleteCircularQueue(circularQueue);
+    }
+    if (processTable != NULL) {
+      free(processTable);
     }
     semctl(bufsemid, 0, IPC_RMID);
     shmdt(bufferaddr);
