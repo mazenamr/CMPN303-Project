@@ -75,6 +75,32 @@ void enqueueCQ(CircularQueue *circularQueue, void *data) {
 /**
  * @brief  Removes the node at the head of a circular queue and
  *         returns True if there was a node to remove.
+ *
+ * @param  CIRCULAR_QUEUE pointer to the circular queue.
+ */
+bool removeCQ(CircularQueue *circularQueue) {
+  Node *node = circularQueue->head;
+
+  if (node == NULL) {
+    return false;
+  }
+
+  circularQueue->head = (node == node->next) ? NULL : node->next;
+
+  if (circularQueue->head != NULL) {
+    circularQueue->head->prev = node->prev;
+    node->prev->next = circularQueue->head;
+  }
+
+  circularQueue->length -= 1;
+
+  free(node);
+  return true;
+}
+
+/**
+ * @brief  Removes the node at the head of a circular queue and
+ *         returns True if there was a node to remove.
  *         It copies the removed node data to the memory
  *         location provided in DATA.
  *         If NULL is given instead of a memory location
@@ -99,32 +125,6 @@ bool dequeueCQ(CircularQueue *circularQueue, void **data) {
   memcpy(*data, node->data, circularQueue->size);
 
   return removeCQ(circularQueue);
-}
-
-/**
- * @brief  Removes the node at the head of a circular queue and
- *         returns True if there was a node to remove.
- *
- * @param  CIRCULAR_QUEUE pointer to the circular queue.
- */
-bool removeCQ(CircularQueue *circularQueue) {
-  Node *node = circularQueue->head;
-
-  if (node == NULL) {
-    return false;
-  }
-
-  circularQueue->head = (node == node->next) ? NULL : node->next;
-
-  if (circularQueue->head != NULL) {
-    circularQueue->head->prev = node->prev;
-    node->prev->next = circularQueue->head;
-  }
-
-  circularQueue->length -= 1;
-
-  free(node);
-  return true;
 }
 
 /**

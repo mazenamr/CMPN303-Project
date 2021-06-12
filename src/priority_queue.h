@@ -88,6 +88,26 @@ void enqueuePQ(PriorityQueue *priorityQueue, void *data, int priority) {
 /**
  * @brief  Removes the node at the head of a priority queue and
  *         returns True if there was a node to remove.
+ *
+ * @param  PRIORITY_QUEUE pointer to the priority queue.
+ */
+bool removePQ(PriorityQueue *priorityQueue) {
+  PriorityNode *node = priorityQueue->head;
+
+  if (node == NULL) {
+    return false;
+  }
+
+  priorityQueue->head = node->next;
+  priorityQueue->length -= 1;
+
+  free(node);
+  return true;
+}
+
+/**
+ * @brief  Removes the node at the head of a priority queue and
+ *         returns True if there was a node to remove.
  *         It copies the removed node data to the memory
  *         location provided in DATA.
  *         If NULL is given instead of a memory location
@@ -112,26 +132,6 @@ bool dequeuePQ(PriorityQueue *priorityQueue, void **data) {
   memcpy(*data, node->data, priorityQueue->size);
 
   return removePQ(priorityQueue);
-}
-
-/**
- * @brief  Removes the node at the head of a priority queue and
- *         returns True if there was a node to remove.
- *
- * @param  PRIORITY_QUEUE pointer to the priority queue.
- */
-bool removePQ(PriorityQueue *priorityQueue) {
-  PriorityNode *node = priorityQueue->head;
-
-  if (node == NULL) {
-    return false;
-  }
-
-  priorityQueue->head = node->next;
-  priorityQueue->length -= 1;
-
-  free(node);
-  return true;
 }
 
 /**
