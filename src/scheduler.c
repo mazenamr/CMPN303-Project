@@ -247,7 +247,6 @@ void srtn(){
 }
 
 void rr() {
-<<<<<<< HEAD
   if (circularQueue == NULL) {
     circularQueue = newCircularQueue(sizeof(ProcessInfo));
   }
@@ -298,9 +297,6 @@ void rr() {
     if (pcb->remainingTime < 0)
       pcb->remainingTime = 0;
   }
-=======
-
->>>>>>> main
 }
 
 static inline void setupIPC() {
