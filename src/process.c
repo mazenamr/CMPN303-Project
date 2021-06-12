@@ -1,35 +1,44 @@
 #include "headers.h"
 
 void cont(int);
-void stop(int);
 
 int remainingTime;
 int startTime;
 int waitTime = 0;
-int stoppedTime;
+int tick;
 bool started = false;
 
 int main(int argc, char *argv[]) {
-  initClk();
-
   signal(SIGCONT, cont);
-  signal(SIGSTOP, stop);
+
+  int procsemid = semget(PROCSEMKEY, 1, 0444);
+  while ((int)procsemid == -1) {
+    printf("Wait! The semaphore not initialized yet!\n");
+    sleep(1);
+    procsemid = semget(PROCSEMKEY, 1, 0444);
+  }
 
   if (argc < 2) {
+    down(procsemid);
     printf("Too few arguments!\n");
     exit(-1);
   }
 
+  initClk();
   remainingTime = atoi(argv[1]);
 
+  tick = getClk();
+  down(procsemid);
+
   while (!started) {
+    tick = getClk();
     usleep(DELAY_TIME);
   }
 
   startTime = getClk();
 
   while (remainingTime > 0) {
-    int tick = getClk();
+    tick = getClk();
     --remainingTime;
     while (tick == getClk()) {
       usleep(DELAY_TIME);
@@ -46,7 +55,5 @@ int main(int argc, char *argv[]) {
 
 void cont(int signum) {
   started = true;
-  waitTime += getClk() - stoppedTime;
+  waitTime += (getClk() - tick);
 }
-
-void stop(int signum) { stoppedTime = getClk(); }
