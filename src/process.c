@@ -5,8 +5,8 @@ void stop(int);
 
 int remainingTime;
 int startTime;
-int waitTime = 0;
-int stoppedTime;
+int waitTime ;
+int stoppedTime = 0;
 bool started = false;
 
 int main(int argc, char *argv[]) {
@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
 
   while (remainingTime > 0) {
     int tick = getClk();
-    --remainingTime;
+    remainingTime = getClk() - remainingTime;
     while (tick == getClk()) {
       usleep(DELAY_TIME);
     }
