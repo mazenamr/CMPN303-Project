@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
   srand(time(null));
   // fprintf(pFile,"%d\n",no);
   fprintf(pFile, "#id arrival runtime priority\n");
-  pData.arrivaltime = 9;
+  pData.arrivaltime = 1;
   for (int i = 1; i <= no; i++) {
     // generate Data Randomly
     //[min-max] = rand() % (max_number + 1 - minimum_number) + minimum_number

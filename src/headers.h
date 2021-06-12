@@ -20,11 +20,12 @@
 
 #define SHKEY 300
 #define BUFKEY 400
-#define SEMKEY 500
+#define BUFSEMKEY 500
+#define PROCSEMKEY 600
 
 // 1,000,000 = 1 sec
-#define CLOCK_TICK_DURATION 100000
-#define DELAY_TIME 50
+#define CLOCK_TICK_DURATION 1000000
+#define DELAY_TIME 100
 
 #define BUFFER_SIZE 128
 #define MAX_LINE_SIZE 256
@@ -146,6 +147,19 @@ void up(int sem) {
 
   if (semop(sem, &p_op, 1) == -1) {
     perror("Error in up()");
+    exit(-1);
+  }
+}
+
+void waitzero(int sem) {
+  struct sembuf p_op;
+
+  p_op.sem_num = 0;
+  p_op.sem_op = 0;
+  p_op.sem_flg = !IPC_NOWAIT;
+
+  if (semop(sem, &p_op, 1) == -1) {
+    perror("Error in waitzero()");
     exit(-1);
   }
 }

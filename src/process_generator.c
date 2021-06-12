@@ -6,7 +6,7 @@ static inline void setupIPC();
 static inline void getInput(char*);
 
 int shmid;
-int semid;
+int bufsemid;
 int *bufferaddr;
 
 Deque *processes = NULL;
@@ -60,14 +60,14 @@ int main(int argc, char *argv[]) {
     while (currentProcess->arrival > getClk()) {
       usleep(DELAY_TIME);
     }
-    down(semid);
+    down(bufsemid);
     while (*messageCount >= BUFFER_SIZE) {
-      up(semid);
+      up(bufsemid);
       usleep(DELAY_TIME);
-      down(semid);
+      down(bufsemid);
     }
     memcpy(buffer + (*messageCount)++, currentProcess, sizeof(Process));
-    up(semid);
+    up(bufsemid);
   }
   free(currentProcess);
 
@@ -97,13 +97,13 @@ static inline void setupIPC() {
 
   *(int *)bufferaddr = 0;
 
-  semid = semget(SEMKEY, 1, 0644 | IPC_CREAT);
-  if ((int)semid == -1) {
+  bufsemid = semget(BUFSEMKEY, 1, 0644 | IPC_CREAT);
+  if ((int)bufsemid == -1) {
     perror("Error in creating semaphore!");
     exit(-1);
   }
 
-  if ((int)semctl(semid, 0, SETVAL, s) == -1) {
+  if ((int)semctl(bufsemid, 0, SETVAL, s) == -1) {
     perror("Error in semctl!");
     exit(-1);
   }
@@ -146,7 +146,7 @@ void clearResources(int signum) {
     if (processes != NULL) {
       deleteDeque(processes);
     }
-    semctl(semid, 0, IPC_RMID);
+    semctl(bufsemid, 0, IPC_RMID);
     shmdt(bufferaddr);
     shmctl(shmid, IPC_RMID, (struct shmid_ds *)0);
     destroyClk(true);
