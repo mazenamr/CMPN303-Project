@@ -21,11 +21,11 @@ all: clean build
 
 debug:
 	./bin/test_generator.out ./bin/processes.txt 4
-	gdb ./bin/process_generator.out ./bin/processes.txt 1
+	gdb ./bin/process_generator.out ./bin/processes.txt 2
 
 run:
 	./bin/test_generator.out ./bin/processes.txt 4
-	./bin/process_generator.out ./bin/processes.txt 1
+	./bin/process_generator.out ./bin/processes.txt 2
 
 run-no-gen:
-	./bin/process_generator.out ./bin/processes.txt 1
+	./bin/process_generator.out ./bin/processes.txt 2
