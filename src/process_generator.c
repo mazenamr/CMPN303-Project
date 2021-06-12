@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
   }
   free(currentProcess);
 
-  while (getClk() <= endtime+2) {
+  while (getClk() <= endtime + 2) {
     usleep(DELAY_TIME);
   }
 

@@ -15,18 +15,18 @@ void hpf();
 void srtn();
 void rr();
 
-
 int shmid;
 int bufsemid;
 int procsemid;
 int *bufferaddr;
 
-ProcessInfo *runningProcess = NULL;
 Deque *arrived = NULL;
+
 Deque *deque = NULL;
 PriorityQueue *priorityQueue = NULL;
 CircularQueue *circularQueue = NULL;
 
+ProcessInfo *runningProcess = NULL;
 PCB **processTable = NULL;
 int processTableSize = PROCESS_TABLE_SIZE;
 
@@ -166,13 +166,14 @@ void sjf() {
 
   ProcessInfo *processInfo = NULL;
   while (popFront(arrived, (void **)&processInfo)) {
-    enqueuePQ(priorityQueue, processInfo, -processTable[processInfo->id]->runtime);
+    enqueuePQ(priorityQueue, processInfo,
+              -processTable[processInfo->id]->runtime);
   }
   free(processInfo);
 
   if (priorityQueue->head != NULL) {
-    PriorityNode* process = priorityQueue->head->next;
-    while (process!= NULL) {
+    PriorityNode *process = priorityQueue->head->next;
+    while (process != NULL) {
       int id = ((ProcessInfo *)(process->data))->id;
       processTable[id]->waitingTime += 1;
       process = process->next;
@@ -201,19 +202,20 @@ void sjf() {
 }
 
 void hpf() {
-   if (priorityQueue == NULL) {
+  if (priorityQueue == NULL) {
     priorityQueue = newPriorityQueue(sizeof(ProcessInfo));
   }
 
   ProcessInfo *processInfo = NULL;
   while (popFront(arrived, (void **)&processInfo)) {
-    enqueuePQ(priorityQueue, processInfo, -processTable[processInfo->id]->priority);
+    enqueuePQ(priorityQueue, processInfo,
+              -processTable[processInfo->id]->priority);
   }
   free(processInfo);
 
   if (priorityQueue->head != NULL) {
-    PriorityNode* process = priorityQueue->head->next;
-    while (process!= NULL) {
+    PriorityNode *process = priorityQueue->head->next;
+    while (process != NULL) {
       int id = ((ProcessInfo *)(process->data))->id;
       processTable[id]->waitingTime += 1;
       process = process->next;
@@ -239,11 +241,9 @@ void hpf() {
     pcb->remainingTime -= 1;
     pcb->executionTime += 1;
   }
-
 }
 
 void srtn(){
-
 }
 
 void rr() {
@@ -257,19 +257,18 @@ void rr() {
   }
 
   if (circularQueue->head != NULL) {
-    Node* process = circularQueue->head->next;
-    for (int i = 0; i < circularQueue->length-1; ++i) {
+    Node *process = circularQueue->head->next;
+    for (int i = 0; i < circularQueue->length - 1; ++i) {
       int id = ((ProcessInfo *)(process->data))->id;
       processTable[id]->waitingTime += 1;
       process = process->next;
     }
-  }
-  else {
+  } else {
     return;
   }
-  
+
   if (runningProcess == NULL) {
-    if (!peekCQ(circularQueue, (void **)& runningProcess)) {
+    if (!peekCQ(circularQueue, (void **)&runningProcess)) {
       return;
     }
     resumeProcess(runningProcess);
@@ -279,7 +278,7 @@ void rr() {
     }
     free(runningProcess);
     dequeueCQ(circularQueue, (void **)&runningProcess);
-    if(peekCQ(circularQueue, (void **)&processInfo)) {
+    if (peekCQ(circularQueue, (void **)&processInfo)) {
       stopProcess(runningProcess);
     }
     enqueueCQ(circularQueue, runningProcess);
@@ -383,9 +382,9 @@ void stopProcess(ProcessInfo *process) {
   kill(process->pid, SIGSTOP);
   PCB *pcb = processTable[process->id];
   printf("At\ttime\t%d\tprocess\t%d\tresumed\t"
-        "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
-        getClk(), process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
-        pcb->waitingTime);
+         "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
+         getClk(), process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
+         pcb->waitingTime);
 }
 
 void removeProcess(ProcessInfo *process) {
