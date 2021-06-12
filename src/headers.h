@@ -30,6 +30,7 @@
 #define BUFFER_SIZE 128
 #define MAX_LINE_SIZE 256
 #define PROCESS_TABLE_SIZE 4096
+#define QUANTA 2
 
 typedef enum SCHEDULING_ALGORITHM {
   NONE,
