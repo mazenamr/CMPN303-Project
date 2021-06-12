@@ -1,32 +1,38 @@
 #include "headers.h"
 
 void cont(int);
-void stop(int);
 
 int remainingTime;
 int startTime;
 int waitTime = 0;
-int stoppedTime;
-int var = 0;
+int tick;
 bool started = false;
 
 int main(int argc, char *argv[]) {
-  started = false;
-  var = atoi(argv[1]);
-  initClk();
-
   signal(SIGCONT, cont);
-  signal(SIGSTOP, stop);
+
+  int procsemid = semget(PROCSEMKEY, 1, 0444);
+  while ((int)procsemid == -1) {
+    printf("Wait! The semaphore not initialized yet!\n");
+    sleep(1);
+    procsemid = semget(PROCSEMKEY, 1, 0444);
+  }
 
   if (argc < 2) {
+    down(procsemid);
     printf("Too few arguments!\n");
     exit(-1);
   }
 
+  initClk();
   remainingTime = atoi(argv[1]);
   printf("remaining time is %d\n", remainingTime);
 
+  tick = getClk();
+  down(procsemid);
+
   while (!started) {
+    tick = getClk();
     usleep(DELAY_TIME);
   }
   printf("Awake!\n");
@@ -34,8 +40,8 @@ int main(int argc, char *argv[]) {
   startTime = getClk();
 
   while (remainingTime > 0) {
-    int tick = getClk();
-    remainingTime = getClk() - remainingTime;
+    tick = getClk();
+    --remainingTime;
     while (tick == getClk()) {
       usleep(DELAY_TIME);
     }
@@ -53,8 +59,5 @@ int main(int argc, char *argv[]) {
 void cont(int signum) {
   printf("Continued \n");
   started = true;
-  waitTime += getClk() - stoppedTime;
-  remainingTime = var;
+  waitTime += (getClk() - tick);
 }
-
-void stop(int signum) { stoppedTime = getClk(); }
