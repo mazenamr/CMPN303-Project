@@ -102,21 +102,18 @@ int main(int argc, char *argv[]) {
 }
 
 void fcfs() {
-  PCB *pcb;
-  Node *process = NULL;
-
   if (deque == NULL) {
     deque = newDeque(sizeof(ProcessInfo));
   }
 
-  while (popFront(arrived, (void **)&process)) {
-    pushBack(deque, process);
+  ProcessInfo *processInfo = NULL;
+  while (popFront(arrived, (void **)&processInfo)) {
+    pushBack(deque, processInfo);
   }
-
-  free(process);
+  free(processInfo);
 
   if (deque->head != NULL) {
-    process = deque->head->next;
+    Node *process = deque->head->next;
     while (process != NULL) {
       int id = ((ProcessInfo *)(process->data))->id;
       processTable[id]->waitingTime += 1;
@@ -133,7 +130,7 @@ void fcfs() {
     startProcess(runningProcess);
   }
 
-  pcb = processTable[runningProcess->id];
+  PCB *pcb = processTable[runningProcess->id];
 
   if (!pcb->remainingTime) {
     removeFront(deque);
@@ -146,20 +143,24 @@ void fcfs() {
 }
 
 void sjf() {
-  PCB *pcb;
-  PriorityNode *process = NULL; 
-
   if (priorityQueue == NULL) {
-    priorityQueue = newPriorityQueue(sizeof(process));
+    priorityQueue = newPriorityQueue(sizeof(ProcessInfo));
   }
 
-  while (popFront(arrived, (void **)&process)) {
-    counter++;
-    enqueuePQ(priorityQueue, process, -processTable[counter]->runtime);
+  ProcessInfo *processInfo = NULL;
+  while (popFront(arrived, (void **)&processInfo)) {
+    enqueuePQ(priorityQueue, processInfo, -processTable[processInfo->id]->runtime);
   }
+  free(processInfo);
 
-  //printf("check 3 \n");
-  if (priorityQueue->head == NULL) {
+  if (priorityQueue->head != NULL) {
+    PriorityNode* process = priorityQueue->head->next;
+    while (process!= NULL) {
+      int id = ((ProcessInfo *)(process->data))->id;
+      processTable[id]->waitingTime += 1;
+      process = process->next;
+    }
+  } else {
     return;
   }
 
@@ -170,22 +171,15 @@ void sjf() {
     startProcess(runningProcess);
   }
 
-  pcb = processTable[runningProcess->id];
-  pcb->remainingTime -= 1;
-  pcb->executionTime += 1;
+  PCB *pcb = processTable[runningProcess->id];
 
   if (!pcb->remainingTime) {
-    dequeuePQ(priorityQueue, (void**)&process);
+    removePQ(priorityQueue);
     removeProcess(runningProcess);
     runningProcess = NULL;
   } else {
-    process = priorityQueue->head->next;
-    while (process!= NULL) {
-      int id = ((Process *)(process->data))->id;
-      processTable[id]->waitingTime += 1;
-      process = process->next;
-    }
-    free(process);
+    pcb->remainingTime -= 1;
+    pcb->executionTime += 1;
   }
 }
 
