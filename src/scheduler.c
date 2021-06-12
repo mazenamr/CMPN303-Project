@@ -116,6 +116,13 @@ void fcfs() {
 
   if (deque->head == NULL) {
     return;
+  } else {
+    process = deque->head->next;
+    while (process != NULL) {
+      int id = ((ProcessInfo *)(process->data))->id;
+      processTable[id]->waitingTime += 1;
+      process = process->next;
+    }
   }
 
   if (runningProcess == NULL) {
@@ -134,15 +141,6 @@ void fcfs() {
   } else {
     pcb->remainingTime -= 1;
     pcb->executionTime += 1;
-  }
-
-  if (deque->head != NULL) {
-    process = deque->head->next;
-    while (process != NULL) {
-      int id = ((ProcessInfo *)(process->data))->id;
-      processTable[id]->waitingTime += 1;
-      process = process->next;
-    }
   }
 }
 
