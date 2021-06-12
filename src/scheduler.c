@@ -1,9 +1,12 @@
 #include "headers.h"
+#include <unistd.h>
 
 void clearResources(int);
 static inline void setupIPC();
 ProcessInfo addProcess(Process*);
 void startProcess(ProcessInfo*);
+void resumeProcess(ProcessInfo*);
+void stopProcess(ProcessInfo*);
 void removeProcess(ProcessInfo*);
 
 void fcfs();
@@ -190,6 +193,56 @@ void srtn(){
 }
 
 void rr() {
+  if (circularQueue == NULL) {
+    circularQueue = newCircularQueue(sizeof(ProcessInfo));
+  }
+
+  ProcessInfo *processInfo = NULL;
+  while (popFront(arrived, (void **)&processInfo)) {
+    enqueueCQ(circularQueue, processInfo);
+  }
+
+  if (circularQueue->head != NULL) {
+    Node* process = circularQueue->head->next;
+    for (int i = 0; i < circularQueue->length-1; ++i) {
+      int id = ((ProcessInfo *)(process->data))->id;
+      processTable[id]->waitingTime += 1;
+      process = process->next;
+    }
+  }
+  else {
+    return;
+  }
+  
+  if (runningProcess == NULL) {
+    if (!peekCQ(circularQueue, (void **)& runningProcess)) {
+      return;
+    }
+    resumeProcess(runningProcess);
+    int tik = getClk();
+    while (tik + QUANTA < getClk()) {
+      usleep(DELAY_TIME);
+    }
+    free(runningProcess);
+    dequeueCQ(circularQueue, (void **)&runningProcess);
+    if(peekCQ(circularQueue, (void **)&processInfo)) {
+      stopProcess(runningProcess);
+    }
+    enqueueCQ(circularQueue, runningProcess);
+  }
+
+  PCB *pcb = processTable[runningProcess->id];
+
+  if (!pcb->remainingTime) {
+    removeCQ(circularQueue);
+    removeProcess(runningProcess);
+    runningProcess = NULL;
+  } else {
+    pcb->remainingTime -= QUANTA;
+    pcb->executionTime += QUANTA;
+    if (pcb->remainingTime < 0)
+      pcb->remainingTime = 0;
+  }
 }
 
 static inline void setupIPC() {
@@ -261,6 +314,24 @@ void startProcess(ProcessInfo *process) {
          "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
          getClk(), process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
          pcb->waitingTime);
+}
+
+void resumeProcess(ProcessInfo *process) {
+  kill(process->pid, SIGCONT);
+  PCB *pcb = processTable[process->id];
+  printf("At\ttime\t%d\tprocess\t%d\tresumed\t"
+         "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
+         getClk(), process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
+         pcb->waitingTime);
+}
+
+void stopProcess(ProcessInfo *process) {
+  kill(process->pid, SIGSTOP);
+  PCB *pcb = processTable[process->id];
+  printf("At\ttime\t%d\tprocess\t%d\tresumed\t"
+        "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
+        getClk(), process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
+        pcb->waitingTime);
 }
 
 void removeProcess(ProcessInfo *process) {
