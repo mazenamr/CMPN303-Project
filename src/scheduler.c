@@ -19,10 +19,11 @@ int *bufferaddr;
 
 PCB *processTable[PROCESS_TABLE_SIZE];
 ProcessInfo *runningProcess = NULL;
-Deque *arrived = NULL;
+Deque *arrived = NULL;                  // equvialent to the ready queue 
 Deque *deque = NULL;
 PriorityQueue *priorityQueue = NULL;
 CircularQueue *circularQueue = NULL;
+int counter = 0;
 
 int main(int argc, char *argv[]) {
   setupIPC();
@@ -146,6 +147,47 @@ void fcfs() {
 }
 
 void sjf() {
+  PCB *pcb;
+  PriorityNode *process = NULL; 
+
+  if (priorityQueue == NULL) {
+    priorityQueue = newPriorityQueue(sizeof(process));
+  }
+
+  while (popFront(arrived, (void **)&process)) {
+    counter++;
+    enqueuePQ(priorityQueue, process, -processTable[counter]->runtime);
+  }
+
+  //printf("check 3 \n");
+  if (priorityQueue->head == NULL) {
+    return;
+  }
+
+  if (runningProcess == NULL) {
+    if (!peekPQ(priorityQueue, (void **)&runningProcess)) {
+      return;
+    }
+    startProcess(runningProcess);
+  }
+
+  pcb = processTable[runningProcess->id];
+  pcb->remainingTime -= 1;
+  pcb->executionTime += 1;
+
+  if (!pcb->remainingTime) {
+    dequeuePQ(priorityQueue, (void**)&process);
+    removeProcess(runningProcess);
+    runningProcess = NULL;
+  } else {
+    process = priorityQueue->head->next;
+    while (process!= NULL) {
+      int id = ((Process *)(process->data))->id;
+      processTable[id]->waitingTime += 1;
+      process = process->next;
+    }
+    free(process);
+  }
 }
 
 void hpf() {
