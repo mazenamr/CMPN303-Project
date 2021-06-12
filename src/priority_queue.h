@@ -75,15 +75,12 @@ void enqueuePQ(PriorityQueue *priorityQueue, void *data, int priority) {
     node->next = NULL;
     priorityQueue->head = node;
     return;
-  } else if (start->priority < priority) {
-    node->next = start;
-    priorityQueue->head = node;
-    return;
   }
 
   while (start->next != NULL && start->next->priority >= priority) {
     start = start->next;
   }
+
   node->next = start->next;
   start->next = node;
   priorityQueue->length += 1;
