@@ -13,7 +13,8 @@ void srtn();
 void rr();
 
 int shmid;
-int semid;
+int bufsemid;
+int procsemid;
 int *bufferaddr;
 
 PCB *processTable[PROCESS_TABLE_SIZE];
@@ -55,14 +56,14 @@ int main(int argc, char *argv[]) {
   while (true) {
     int tick = getClk();
 
-    down(semid);
+    down(bufsemid);
     for (int i = 0; i < *messageCount; ++i) {
       Process *currentProcess = buffer + i;
       ProcessInfo newProcess = addProcess(currentProcess);
       pushBack(arrived, &newProcess);
     }
     *messageCount = 0;
-    up(semid);
+    up(bufsemid);
 
     switch (sch) {
     case FCFS:
@@ -87,12 +88,12 @@ int main(int argc, char *argv[]) {
     }
 
     while (tick == getClk()) {
-      down(semid);
+      down(bufsemid);
       if (*messageCount) {
-        up(semid);
+        up(bufsemid);
         break;
       }
-      up(semid);
+      up(bufsemid);
       usleep(DELAY_TIME);
     }
   }
@@ -105,12 +106,13 @@ void fcfs() {
   Node *process = NULL;
 
   if (deque == NULL) {
-    deque = newDeque(sizeof(Process));
+    deque = newDeque(sizeof(ProcessInfo));
   }
 
   while (popFront(arrived, (void **)&process)) {
     pushBack(deque, process);
   }
+  free(process);
 
   if (deque->head == NULL) {
     return;
@@ -124,21 +126,23 @@ void fcfs() {
   }
 
   pcb = processTable[runningProcess->id];
-  pcb->remainingTime -= 1;
-  pcb->executionTime += 1;
 
   if (!pcb->remainingTime) {
     removeFront(deque);
     removeProcess(runningProcess);
     runningProcess = NULL;
   } else {
+    pcb->remainingTime -= 1;
+    pcb->executionTime += 1;
+  }
+
+  if (deque->head != NULL) {
     process = deque->head->next;
     while (process != NULL) {
-      int id = ((Process *)(process->data))->id;
+      int id = ((ProcessInfo *)(process->data))->id;
       processTable[id]->waitingTime += 1;
       process = process->next;
     }
-    free(process);
   }
 }
 
@@ -155,7 +159,6 @@ void sjf() {
     enqueuePQ(priorityQueue, process, -processTable[counter]->runtime);
   }
 
-  //printf("check 3 \n");
   if (priorityQueue->head == NULL) {
     return;
   }
@@ -196,6 +199,9 @@ void rr() {
 }
 
 static inline void setupIPC() {
+  semun s;
+  s.val = 1;
+
   shmid = shmget(BUFKEY, sizeof(int) + sizeof(Process) * BUFFER_SIZE, 0444);
   while ((int)shmid == -1) {
     printf("Wait! The buffer not initialized yet!\n");
@@ -209,11 +215,22 @@ static inline void setupIPC() {
     exit(-1);
   }
 
-  semid = semget(SEMKEY, 1, 0444);
-  while ((int)shmid == -1) {
+  bufsemid = semget(BUFSEMKEY, 1, 0444);
+  while ((int)bufsemid == -1) {
     printf("Wait! The semaphore not initialized yet!\n");
     sleep(1);
-    semid = semget(SEMKEY, 1, 0444);
+    bufsemid = semget(BUFSEMKEY, 1, 0444);
+  }
+
+  procsemid = semget(PROCSEMKEY, 1, 0644 | IPC_CREAT);
+  if ((int)procsemid == -1) {
+    perror("Error in creating semaphore!");
+    exit(-1);
+  }
+
+  if ((int)semctl(procsemid, 0, SETVAL, s) == -1) {
+    perror("Error in semctl!");
+    exit(-1);
   }
 }
 
@@ -233,7 +250,9 @@ ProcessInfo addProcess(Process *process) {
   if (!pid) {
     execl("bin/process.out", "process.out", runtime, NULL);
   }
+  waitzero(procsemid);
   kill(pid, SIGSTOP);
+  up(procsemid);
   ProcessInfo newProcess;
   newProcess.id = process->id;
   newProcess.pid = pid;
@@ -278,6 +297,7 @@ void clearResources(int signum) {
     if (circularQueue != NULL) {
       deleteCircularQueue(circularQueue);
     }
+    semctl(bufsemid, 0, IPC_RMID);
     shmdt(bufferaddr);
     destroyClk(false);
   }
