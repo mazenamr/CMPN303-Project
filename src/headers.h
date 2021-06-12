@@ -56,6 +56,11 @@ typedef struct Process {
   int priority;
 } Process;
 
+typedef struct ProcessInfo {
+  int id;
+  pid_t pid;
+} ProcessInfo;
+
 /**
  * @brief  Struct to represent the process control block
  *         which contains various info about a process.
@@ -66,9 +71,10 @@ typedef struct PCB
   int arrival;
   int runtime;
   int priority;
-  int remainingTime;
-  int waitingTime;
   int startTime;
+  int remainingTime;
+  int executionTime;
+  int waitingTime;
   PROCESS_STATE state;
 }PCB;
 

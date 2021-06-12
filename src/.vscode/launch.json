@@ -6,7 +6,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${fileDirname}/bin/process_generator.out",
-            "args": ["bin/processes.txt", "3"],
+            "args": ["bin/processes.txt", "1"],
             "stopAtEntry": true,
             "cwd": "${fileDirname}",
             "environment": [],

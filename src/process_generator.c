@@ -5,10 +5,11 @@ void clearResources(int);
 static inline void setupIPC();
 static inline void getInput(char*);
 
-Deque *processes;
 int shmid;
 int semid;
 int *bufferaddr;
+
+Deque *processes = NULL;
 
 int main(int argc, char *argv[]) {
   pid_t pid;
@@ -142,7 +143,12 @@ void clearResources(int signum) {
   static bool ended = false;
   if (!ended) {
     ended = true;
-    deleteDeque(processes);
+    if (processes != NULL) {
+      deleteDeque(processes);
+    }
+    semctl(semid, 0, IPC_RMID);
+    shmdt(bufferaddr);
+    shmctl(shmid, IPC_RMID, (struct shmid_ds *)0);
     destroyClk(true);
   }
   exit(0);

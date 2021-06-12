@@ -2,26 +2,34 @@
 
 void clearResources(int);
 static inline void setupIPC();
+ProcessInfo addProcess(Process*);
+void startProcess(ProcessInfo*);
+void removeProcess(ProcessInfo*);
+
 void fcfs();
 void sjf();
 void hpf();
 void srtn();
 void rr();
-void addPCB(Process*p);
 
 int shmid;
 int semid;
 int *bufferaddr;
+
 PCB *processTable[PROCESS_TABLE_SIZE];
-int *messageCount;
-Process *buffer;
+ProcessInfo *runningProcess = NULL;
+Deque *arrived = NULL;
+Deque *deque = NULL;
+PriorityQueue *priorityQueue = NULL;
+CircularQueue *circularQueue = NULL;
 
 int main(int argc, char *argv[]) {
-  signal(SIGINT, clearResources);
-
   setupIPC();
-  messageCount = (int *)bufferaddr;
-  buffer = (Process *)((void *)bufferaddr + sizeof(int));
+
+  int *messageCount = (int *)bufferaddr;
+  Process *buffer = (Process *)((void *)bufferaddr + sizeof(int));
+
+  signal(SIGINT, clearResources);
 
   initClk();
 
@@ -39,20 +47,23 @@ int main(int argc, char *argv[]) {
     exit(-1);
   }
 
-  printf("#id\tarrival\ttime\truntime\tpriority\n");
-   while (true) {                                                 // Main loop 
+  arrived = newDeque(sizeof(PCB));
+
+  printf("#At\ttime\tx\tprocess\ty\tstate\t"
+         "\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n");
+  while (true) {
     int tick = getClk();
+
     down(semid);
     for (int i = 0; i < *messageCount; ++i) {
       Process *currentProcess = buffer + i;
-      printf("%d\t%d\t%d\t%d\t%d\n", currentProcess->id,
-             currentProcess->arrival, getClk(), currentProcess->runtime,
-             currentProcess->priority);
-      addPCB(currentProcess);
+      ProcessInfo newProcess = addProcess(currentProcess);
+      pushBack(arrived, &newProcess);
     }
     *messageCount = 0;
     up(semid);
-    switch (atoi(argv[1])) {
+
+    switch (sch) {
     case FCFS:
       fcfs();
       break;
@@ -73,6 +84,7 @@ int main(int argc, char *argv[]) {
       printSchedulingAlgorithms();
       exit(-1);
     }
+
     while (tick == getClk()) {
       down(semid);
       if (*messageCount) {
@@ -88,6 +100,45 @@ int main(int argc, char *argv[]) {
 }
 
 void fcfs() {
+  PCB *pcb;
+  Node *process = NULL;
+
+  if (deque == NULL) {
+    deque = newDeque(sizeof(Process));
+  }
+
+  while (popFront(arrived, (void **)&process)) {
+    pushBack(deque, process);
+  }
+
+  if (deque->head == NULL) {
+    return;
+  }
+
+  if (runningProcess == NULL) {
+    if (!peekFront(deque, (void **)&runningProcess)) {
+      return;
+    }
+    startProcess(runningProcess);
+  }
+
+  pcb = processTable[runningProcess->id];
+  pcb->remainingTime -= 1;
+  pcb->executionTime += 1;
+
+  if (!pcb->remainingTime) {
+    removeFront(deque);
+    removeProcess(runningProcess);
+    runningProcess = NULL;
+  } else {
+    process = deque->head->next;
+    while (process != NULL) {
+      int id = ((Process *)(process->data))->id;
+      processTable[id]->waitingTime += 1;
+      process = process->next;
+    }
+    free(process);
+  }
 }
 
 void sjf() {
@@ -124,15 +175,47 @@ static inline void setupIPC() {
   }
 }
 
-void addPCB(Process *p){
-  processTable[p->id] = malloc(sizeof(PCB));
-  processTable[p->id]->id = p->id;
-  processTable[p->id]->arrival = p->arrival;
-  processTable[p->id]->runtime = p->runtime;
-  processTable[p->id]->priority = p->priority;
-  processTable[p->id]->waitingtime = 0;
-  processTable[p->id]->starttime = -1;
-  processTable[p->id]->remainingtime = p->runtime;
+ProcessInfo addProcess(Process *process) {
+  processTable[process->id] = malloc(sizeof(PCB));
+  PCB *pcb = processTable[process->id];
+  pcb->id = process->id;
+  pcb->arrival = process->arrival;
+  pcb->runtime = process->runtime;
+  pcb->priority = process->priority;
+  pcb->remainingTime = process->runtime;
+  pcb->executionTime = 0;
+  pcb->waitingTime = 0;
+  char runtime[8];
+  sprintf(runtime, "%d", process->runtime);
+  pid_t pid = fork();
+  if (!pid) {
+    execl("bin/process.out", "process.out", runtime, NULL);
+  }
+  kill(pid, SIGSTOP);
+  ProcessInfo newProcess;
+  newProcess.id = process->id;
+  newProcess.pid = pid;
+  return newProcess;
+}
+
+void startProcess(ProcessInfo *process) {
+  kill(process->pid, SIGCONT);
+  PCB *pcb = processTable[process->id];
+  pcb->startTime = getClk();
+  printf("At\ttime\t%d\tprocess\t%d\tstarted\t"
+         "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
+         getClk(), process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
+         pcb->waitingTime);
+}
+
+void removeProcess(ProcessInfo *process) {
+  PCB *pcb = processTable[process->id];
+  pcb->startTime = getClk();
+  printf("At\ttime\t%d\tprocess\t%d\tfinished"
+         "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
+         getClk(), process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
+         pcb->waitingTime);
+  free(pcb);
 }
 
 void clearResources(int signum) {
@@ -141,7 +224,20 @@ void clearResources(int signum) {
   static bool ended = false;
   if (!ended) {
     ended = true;
-    destroyClk(true);
+    if (arrived != NULL) {
+      deleteDeque(arrived);
+    }
+    if (deque != NULL) {
+      deleteDeque(deque);
+    }
+    if (priorityQueue != NULL) {
+      deletePriorityQueue(priorityQueue);
+    }
+    if (circularQueue != NULL) {
+      deleteCircularQueue(circularQueue);
+    }
+    shmdt(bufferaddr);
+    destroyClk(false);
   }
   exit(0);
 }

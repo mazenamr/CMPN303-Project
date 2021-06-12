@@ -21,7 +21,7 @@ all: clean build
 
 debug:
 	./bin/test_generator.out ./bin/processes.txt 16
-	gdb ./bin/process_generator.out ./bin/processes.txt 3
+	gdb ./bin/process_generator.out ./bin/processes.txt 1
 
 run:
 	./bin/test_generator.out ./bin/processes.txt 16
