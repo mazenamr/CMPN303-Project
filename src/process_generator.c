@@ -56,6 +56,7 @@ int main(int argc, char *argv[]) {
 
   // add each process to the buffer on reaching its arrival time
   Process *currentProcess = NULL;
+  int endtime = getClk();
   while (popFront(processes, (void *)&currentProcess)) {
     while (currentProcess->arrival > getClk()) {
       usleep(DELAY_TIME);
@@ -68,10 +69,12 @@ int main(int argc, char *argv[]) {
     }
     memcpy(buffer + (*messageCount)++, currentProcess, sizeof(Process));
     up(bufsemid);
+    endtime = (getClk() > endtime) ? getClk() : endtime;
+    endtime += currentProcess->runtime + 1;
   }
   free(currentProcess);
 
-  while (true) {
+  while (getClk() <= endtime+2) {
     usleep(DELAY_TIME);
   }
 
