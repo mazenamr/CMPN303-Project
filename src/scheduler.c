@@ -112,17 +112,18 @@ void fcfs() {
   while (popFront(arrived, (void **)&process)) {
     pushBack(deque, process);
   }
+
   free(process);
 
-  if (deque->head == NULL) {
-    return;
-  } else {
+  if (deque->head != NULL) {
     process = deque->head->next;
     while (process != NULL) {
       int id = ((ProcessInfo *)(process->data))->id;
       processTable[id]->waitingTime += 1;
       process = process->next;
     }
+  } else {
+    return;
   }
 
   if (runningProcess == NULL) {
