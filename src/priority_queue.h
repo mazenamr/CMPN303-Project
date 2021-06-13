@@ -70,9 +70,16 @@ void enqueuePQ(PriorityQueue *priorityQueue, void *data, int priority) {
   node->priority = priority;
 
   memcpy(node->data, data, priorityQueue->size);
+  priorityQueue->length += 1;
 
   if (priorityQueue->head == NULL) {
     node->next = NULL;
+    priorityQueue->head = node;
+    return;
+  }
+
+  if (start->priority < priority) {
+    node->next = start;
     priorityQueue->head = node;
     return;
   }
@@ -83,7 +90,6 @@ void enqueuePQ(PriorityQueue *priorityQueue, void *data, int priority) {
 
   node->next = start->next;
   start->next = node;
-  priorityQueue->length += 1;
 }
 
 /**
@@ -161,5 +167,4 @@ bool peekPQ(PriorityQueue *priorityQueue, void **data) {
 
   return true;
 }
-
 #endif

@@ -11,10 +11,10 @@ void stopProcess(ProcessInfo*);
 void removeProcess(ProcessInfo*);
 
 bool fcfs();
-void sjf();
-void hpf();
-void srtn();
-void rr();
+bool sjf();
+bool hpf();
+bool srtn();
+bool rr();
 
 void clearResources(int);
 
@@ -79,16 +79,16 @@ int main(int argc, char *argv[]) {
         ran = fcfs();
         break;
       case SJF:
-        sjf();
+        ran = sjf();
         break;
       case HPF:
-        hpf();
+        ran = hpf();
         break;
       case SRTN:
-        srtn();
+        ran = srtn();
         break;
       case RR:
-        rr();
+        ran = rr();
         break;
       default:
         printf("Invalid scheduling algorithm!\n");
@@ -316,142 +316,97 @@ bool fcfs() {
   return false;
 }
 
-void sjf() {
+bool sjf() {
+  PCB *pcb;
+  ProcessInfo *processInfo;
+  // initialize priority queue of project info if it's not initialized
   if (priorityQueue == NULL) {
     priorityQueue = newPriorityQueue(sizeof(ProcessInfo));
   }
 
-  ProcessInfo *processInfo = NULL;
-  while (popFront(arrived, (void **)&processInfo)) {
-    enqueuePQ(priorityQueue, processInfo,
-              -processTable[processInfo->id]->runtime);
-  }
-  free(processInfo);
-
-  if (priorityQueue->head != NULL) {
-    PriorityNode *process = priorityQueue->head->next;
-    while (process != NULL) {
-      int id = ((ProcessInfo *)(process->data))->id;
-      processTable[id]->waitingTime += 1;
-      process = process->next;
+  // if the priority queue is empty, there is nothing to do
+  if (priorityQueue->head == NULL) {
+    if (arrived->head == NULL) {
+      return false;
     }
-  } else {
-    return;
+    // load the newly arrived processes into the priority queue
+    processInfo = NULL;
+    while (popFront(arrived, (void **)&processInfo)) {
+      pcb = processTable[processInfo->id];
+      enqueuePQ(priorityQueue, processInfo, -1 * (pcb->runtime));
+    }
+    free(processInfo);
   }
 
-  if (runningProcess == NULL) {
+  // if we don't have a running process then we
+  // should start the next process in the priority queue
+  while (runningProcess == NULL) {
+    // if we don't have a running process
+    // and the priority queue is empty, then there
+    // is nothing to do
     if (!peekPQ(priorityQueue, (void **)&runningProcess)) {
-      return;
+      return false;
     }
+
     startProcess(runningProcess);
-  }
 
-  PCB *pcb = processTable[runningProcess->id];
-
-  if (!pcb->remainingTime) {
-    removePQ(priorityQueue);
-    removeProcess(runningProcess);
-    runningProcess = NULL;
-  } else {
-    pcb->remainingTime -= 1;
-    pcb->executionTime += 1;
-  }
-}
-
-void hpf() {
-  if (priorityQueue == NULL) {
-    priorityQueue = newPriorityQueue(sizeof(ProcessInfo));
-  }
-
-  ProcessInfo *processInfo = NULL;
-  while (popFront(arrived, (void **)&processInfo)) {
-    enqueuePQ(priorityQueue, processInfo,
-              -processTable[processInfo->id]->priority);
-  }
-  free(processInfo);
-
-  if (priorityQueue->head != NULL) {
-    PriorityNode *process = priorityQueue->head->next;
-    while (process != NULL) {
-      int id = ((ProcessInfo *)(process->data))->id;
-      processTable[id]->waitingTime += 1;
-      process = process->next;
-    }
-  } else {
-    return;
-  }
-
-  if (runningProcess == NULL) {
-    if (!peekPQ(priorityQueue, (void **)&runningProcess)) {
-      return;
-    }
-    startProcess(runningProcess);
-  }
-
-  PCB *pcb = processTable[runningProcess->id];
-
-  if (!pcb->remainingTime) {
-    removePQ(priorityQueue);
-    removeProcess(runningProcess);
-    runningProcess = NULL;
-  } else {
-    pcb->remainingTime -= 1;
-    pcb->executionTime += 1;
-  }
-}
-
-void srtn(){
-}
-
-void rr() {
-  if (circularQueue == NULL) {
-    circularQueue = newCircularQueue(sizeof(ProcessInfo));
-  }
-
-  ProcessInfo *processInfo = NULL;
-  while (popFront(arrived, (void **)&processInfo)) {
-    enqueueCQ(circularQueue, processInfo);
-  }
-
-  if (circularQueue->head != NULL) {
-    Node *process = circularQueue->head->next;
-    for (int i = 0; i < circularQueue->length - 1; ++i) {
-      int id = ((ProcessInfo *)(process->data))->id;
-      processTable[id]->waitingTime += 1;
-      process = process->next;
-    }
-  } else {
-    return;
-  }
-
-  if (runningProcess == NULL) {
-    if (!peekCQ(circularQueue, (void **)&runningProcess)) {
-      return;
-    }
-    resumeProcess(runningProcess);
-    int tik = getClk();
-    while (tik + QUANTA < getClk()) {
-      usleep(DELAY_TIME);
-    }
-    PCB *pcb = processTable[runningProcess->id];
-
-    if (!pcb->remainingTime) {
-      removeCQ(circularQueue);
+    // if the process that we have just started
+    // has a runtime of zero then we should
+    // remove it and try to load another one
+    pcb = processTable[runningProcess->id];
+    if (pcb->remainingTime == 0) {
+      // removeElement(priorityQueue, runningProcess);
+      removePQ(priorityQueue);
       removeProcess(runningProcess);
+      free(runningProcess);
       runningProcess = NULL;
-    } 
-    else {
-    pcb->remainingTime -= QUANTA;
-    pcb->executionTime += QUANTA;
-    if (pcb->remainingTime < 0)
-      pcb->remainingTime = 0;
-  }
-    if (circularQueue->head->next && runningProcess != NULL) {
-      stopProcess(runningProcess);
-      runningProcess = (ProcessInfo*)(circularQueue->head->next->data);
-      printf("Test %d\n",runningProcess->id);
+      continue;
     }
+    break;
   }
+
+  // the head of the priority queue should be
+  // the currently running process
+  // so we will increase the wait time
+  // of all the processes after the head
+  PriorityNode *process = priorityQueue->head->next;
+  while (process != NULL) {
+    int id = ((ProcessInfo *)(process->data))->id;
+    processTable[id]->waitingTime += 1;
+    process = process->next;
+  }
+
+  // update the pcb of the running process
+  pcb = processTable[runningProcess->id];
+  pcb->remainingTime -= 1;
+  pcb->executionTime += 1;
+
+  // if the running process has finished
+  // then we need to remove it
+  if (runningProcess != NULL) {
+    pcb = processTable[runningProcess->id];
+    if (!pcb->remainingTime) {
+      // removeElement(priorityQueue, runningProcess);
+      removePQ(priorityQueue);
+      removeProcess(runningProcess);
+      free(runningProcess);
+      runningProcess = NULL;
+    }
+    return true;
+  }
+  return false;
+}
+
+bool hpf() {
+  return true;
+}
+
+bool srtn(){
+  return true;
+}
+
+bool rr() {
+  return true;
 }
 
 void clearResources(int signum) {

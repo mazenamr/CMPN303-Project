@@ -57,20 +57,28 @@ int main(int argc, char *argv[]) {
   // add each process to the buffer on reaching its arrival time
   Process *currentProcess = NULL;
   int endtime = getClk();
-  while (popFront(processes, (void *)&currentProcess)) {
-    while (currentProcess->arrival > getClk()) {
-      usleep(DELAY_TIME);
-    }
+  while (true) {
     down(bufsemid);
-    while (*messageCount >= BUFFER_SIZE) {
-      up(bufsemid);
-      usleep(DELAY_TIME);
-      down(bufsemid);
+    int tick = getClk();
+    while (peekFront(processes, (void **)&currentProcess)) {
+      if (currentProcess->arrival <= getClk()) {
+        removeFront(processes);
+        while (*messageCount >= BUFFER_SIZE) {
+          up(bufsemid);
+          usleep(DELAY_TIME);
+          down(bufsemid);
+        }
+        memcpy(buffer + (*messageCount)++, currentProcess, sizeof(Process));
+        endtime = (getClk() > endtime) ? getClk() : endtime;
+        endtime += currentProcess->runtime + 1;
+        continue;
+      }
+      break;
     }
-    memcpy(buffer + (*messageCount)++, currentProcess, sizeof(Process));
     up(bufsemid);
-    endtime = (getClk() > endtime) ? getClk() : endtime;
-    endtime += currentProcess->runtime + 1;
+    while (tick == getClk()) {
+      usleep(DELAY_TIME);
+    }
   }
   free(currentProcess);
 
