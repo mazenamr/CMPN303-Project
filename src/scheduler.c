@@ -10,7 +10,7 @@ void resumeProcess(ProcessInfo*);
 void stopProcess(ProcessInfo*);
 void removeProcess(ProcessInfo*);
 
-void fcfs();
+bool fcfs();
 void sjf();
 void hpf();
 void srtn();
@@ -66,46 +66,49 @@ int main(int argc, char *argv[]) {
 
   arrived = newDeque(sizeof(PCB));
 
+  bool ran = false;
   printf("#At\ttime\tx\tprocess\ty\tstate\t"
          "\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n\n");
   while (true) {
     loadBuffer();
     tick = getClk();
 
-    bool ran = runningProcess != NULL;
-
-    switch (sch) {
-    case FCFS:
-      fcfs();
-      break;
-    case SJF:
-      sjf();
-      break;
-    case HPF:
-      hpf();
-      break;
-    case SRTN:
-      srtn();
-      break;
-    case RR:
-      rr();
-      break;
-    default:
-      printf("Invalid scheduling algorithm!\n");
-      printSchedulingAlgorithms();
-      exit(-1);
+    if (!ran) {
+      switch (sch) {
+      case FCFS:
+        ran = fcfs();
+        break;
+      case SJF:
+        sjf();
+        break;
+      case HPF:
+        hpf();
+        break;
+      case SRTN:
+        srtn();
+        break;
+      case RR:
+        rr();
+        break;
+      default:
+        printf("Invalid scheduling algorithm!\n");
+        printSchedulingAlgorithms();
+        exit(-1);
+      }
     }
 
-    while (tick == getClk()) {
-      if (!ran) {
-        down(bufsemid);
-        if (*messageCount) {
-          up(bufsemid);
-          break;
-        }
+    while (true) {
+      down(bufsemid);
+      if (*messageCount) {
         up(bufsemid);
+        break;
       }
+      up(bufsemid);
       usleep(DELAY_TIME);
+      if (tick != getClk()) {
+        ran = false;
+        break;
+      }
     }
   }
   clearResources(-1);
@@ -237,7 +240,7 @@ void removeProcess(ProcessInfo *process) {
   free(pcb);
 }
 
-void fcfs() {
+bool fcfs() {
   PCB *pcb;
   // initialize deque of project info if it's not initialized
   if (deque == NULL) {
@@ -253,7 +256,7 @@ void fcfs() {
 
   // if the deque is empty, there is nothing to do
   if (deque->head == NULL) {
-    return;
+    return false;
   }
 
   // if we don't have a running process then we
@@ -263,7 +266,7 @@ void fcfs() {
     // and the deque is empty, then there
     // is nothing to do
     if (!peekFront(deque, (void **)&runningProcess)) {
-      return;
+      return false;
     }
 
     startProcess(runningProcess);
@@ -308,7 +311,9 @@ void fcfs() {
       free(runningProcess);
       runningProcess = NULL;
     }
+    return true;
   }
+  return false;
 }
 
 void sjf() {
