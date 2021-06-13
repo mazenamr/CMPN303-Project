@@ -5,7 +5,7 @@ static inline void setupIPC();
 static inline void loadBuffer();
 
 ProcessInfo addProcess(Process*);
-void startProcess(ProcessInfo*);
+void contProcess(ProcessInfo*);
 void resumeProcess(ProcessInfo*);
 void stopProcess(ProcessInfo*);
 void removeProcess(ProcessInfo*);
@@ -198,7 +198,7 @@ ProcessInfo addProcess(Process *process) {
   return newProcess;
 }
 
-void startProcess(ProcessInfo *process) {
+void contProcess(ProcessInfo *process) {
   kill(process->pid, SIGCONT);
   PCB *pcb = processTable[process->id];
   pcb->startTime = tick;
@@ -208,19 +208,10 @@ void startProcess(ProcessInfo *process) {
          pcb->waitingTime);
 }
 
-void resumeProcess(ProcessInfo *process) {
-  kill(process->pid, SIGCONT);
-  PCB *pcb = processTable[process->id];
-  printf("At\ttime\t%d\tprocess\t%d\tresumed\t"
-         "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
-         tick, process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
-         pcb->waitingTime);
-}
-
 void stopProcess(ProcessInfo *process) {
   kill(process->pid, SIGSTOP);
   PCB *pcb = processTable[process->id];
-  printf("At\ttime\t%d\tprocess\t%d\tresumed\t"
+  printf("At\ttime\t%d\tprocess\t%d\tstopped\t"
          "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
          tick, process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
          pcb->waitingTime);
@@ -261,28 +252,14 @@ bool fcfs() {
 
   // if we don't have a running process then we
   // should start the next process in the deque
-  while (runningProcess == NULL) {
+  if (runningProcess == NULL) {
     // if we don't have a running process
     // and the deque is empty, then there
     // is nothing to do
     if (!peekFront(deque, (void **)&runningProcess)) {
       return false;
     }
-
-    startProcess(runningProcess);
-
-    // if the process that we have just started
-    // has a runtime of zero then we should
-    // remove it and try to load another one
-    pcb = processTable[runningProcess->id];
-    if (pcb->remainingTime == 0) {
-      removeFront(deque);
-      removeProcess(runningProcess);
-      free(runningProcess);
-      runningProcess = NULL;
-      continue;
-    }
-    break;
+    contProcess(runningProcess);
   }
 
   // the head of the deque should be
@@ -340,29 +317,14 @@ bool sjf() {
 
   // if we don't have a running process then we
   // should start the next process in the priority queue
-  while (runningProcess == NULL) {
+  if (runningProcess == NULL) {
     // if we don't have a running process
     // and the priority queue is empty, then there
     // is nothing to do
     if (!peekPQ(priorityQueue, (void **)&runningProcess)) {
       return false;
     }
-
-    startProcess(runningProcess);
-
-    // if the process that we have just started
-    // has a runtime of zero then we should
-    // remove it and try to load another one
-    pcb = processTable[runningProcess->id];
-    if (pcb->remainingTime == 0) {
-      // removeElement(priorityQueue, runningProcess);
-      removePQ(priorityQueue);
-      removeProcess(runningProcess);
-      free(runningProcess);
-      runningProcess = NULL;
-      continue;
-    }
-    break;
+    contProcess(runningProcess);
   }
 
   // the head of the priority queue should be
@@ -402,7 +364,89 @@ bool hpf() {
 }
 
 bool srtn(){
-  return true;
+  PCB *pcb;
+  ProcessInfo *processInfo;
+  // initialize priority queue of project info if it's not initialized
+  if (priorityQueue == NULL) {
+    priorityQueue = newPriorityQueue(sizeof(ProcessInfo));
+  }
+
+  // if the priority queue is empty, there is nothing to do
+  if (priorityQueue->head == NULL) {
+    if (arrived->head == NULL) {
+      return false;
+    }
+  }
+
+  // we need to change the priorty of the running process
+  // to the remaining time instead of the total runtime
+  if (runningProcess != NULL) {
+    pcb = processTable[runningProcess->id];
+    priorityQueue->head->priority = -1 * (pcb->remainingTime);
+  }
+
+  // load the newly arrived processes into the priority queue
+  processInfo = NULL;
+  while (popFront(arrived, (void **)&processInfo)) {
+    pcb = processTable[processInfo->id];
+    enqueuePQ(priorityQueue, processInfo, -1 * (pcb->runtime));
+  }
+
+  // if we don't have a running process then we
+  // should start the next process in the priority queue
+  if (runningProcess == NULL) {
+    // if we don't have a running process
+    // and the priority queue is empty, then there
+    // is nothing to do
+    if (!peekPQ(priorityQueue, (void **)&runningProcess)) {
+      return false;
+    }
+    contProcess(runningProcess);
+  } else {
+    // we always switch the running process to the first
+    // process in the priority queue
+    peekPQ(priorityQueue, (void **)&processInfo);
+    if (processInfo->id != runningProcess->id) {
+      stopProcess(runningProcess);
+      free(runningProcess);
+      runningProcess = processInfo;
+      contProcess(runningProcess);
+    }
+    else {
+      free(processInfo);
+    }
+  }
+
+  // the head of the priority queue should be
+  // the currently running process
+  // so we will increase the wait time
+  // of all the processes after the head
+  PriorityNode *process = priorityQueue->head->next;
+  while (process != NULL) {
+    int id = ((ProcessInfo *)(process->data))->id;
+    processTable[id]->waitingTime += 1;
+    process = process->next;
+  }
+
+  // update the pcb of the running process
+  pcb = processTable[runningProcess->id];
+  pcb->remainingTime -= 1;
+  pcb->executionTime += 1;
+
+  // if the running process has finished
+  // then we need to remove it
+  if (runningProcess != NULL) {
+    pcb = processTable[runningProcess->id];
+    if (!pcb->remainingTime) {
+      // removeElement(priorityQueue, runningProcess);
+      removePQ(priorityQueue);
+      removeProcess(runningProcess);
+      free(runningProcess);
+      runningProcess = NULL;
+    }
+    return true;
+  }
+  return false;
 }
 
 bool rr() {
