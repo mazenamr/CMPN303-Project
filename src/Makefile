@@ -24,8 +24,8 @@ debug:
 	gdb ./bin/process_generator.out ./bin/processes.txt 2
 
 run:
-	./bin/test_generator.out ./bin/processes.txt 16
-	./bin/process_generator.out ./bin/processes.txt 2
+	./bin/test_generator.out ./bin/processes.txt 8
+	./bin/process_generator.out ./bin/processes.txt 1
 
 run-no-gen:
-	./bin/process_generator.out ./bin/processes.txt 2
+	./bin/process_generator.out ./bin/processes.txt 1

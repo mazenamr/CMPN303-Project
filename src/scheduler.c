@@ -1,19 +1,21 @@
 #include "headers.h"
 #include <unistd.h>
 
-void clearResources(int);
 static inline void setupIPC();
 ProcessInfo addProcess(Process*);
 void startProcess(ProcessInfo*);
 void resumeProcess(ProcessInfo*);
 void stopProcess(ProcessInfo*);
 void removeProcess(ProcessInfo*);
+void clearResources(int);
 
 void fcfs();
 void sjf();
 void hpf();
 void srtn();
 void rr();
+
+int tick;
 
 int shmid;
 int bufsemid;
@@ -59,10 +61,8 @@ int main(int argc, char *argv[]) {
   arrived = newDeque(sizeof(PCB));
 
   printf("#At\ttime\tx\tprocess\ty\tstate\t"
-         "\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n");
+         "\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n\n");
   while (true) {
-    int tick = getClk();
-
     down(bufsemid);
     for (int i = 0; i < *messageCount; ++i) {
       Process *currentProcess = buffer + i;
@@ -81,6 +81,8 @@ int main(int argc, char *argv[]) {
     }
     *messageCount = 0;
     up(bufsemid);
+
+    tick = getClk();
 
     switch (sch) {
     case FCFS:
@@ -114,48 +116,80 @@ int main(int argc, char *argv[]) {
       usleep(DELAY_TIME);
     }
   }
-
   clearResources(-1);
 }
 
 void fcfs() {
+  PCB *pcb;
+  // initialize deque of project info if it's not initialized
   if (deque == NULL) {
     deque = newDeque(sizeof(ProcessInfo));
   }
 
+  // load the newly arrived processes into the deque
   ProcessInfo *processInfo = NULL;
   while (popFront(arrived, (void **)&processInfo)) {
     pushBack(deque, processInfo);
   }
   free(processInfo);
 
-  if (deque->head != NULL) {
-    Node *process = deque->head->next;
-    while (process != NULL) {
-      int id = ((ProcessInfo *)(process->data))->id;
-      processTable[id]->waitingTime += 1;
-      process = process->next;
-    }
-  } else {
+  // if the deque is empty, there is nothing to do
+  if (deque->head == NULL) {
     return;
   }
 
-  if (runningProcess == NULL) {
+  // if we don't have a running process then we
+  // should start the next process in the deque
+  while (runningProcess == NULL) {
+    // if we don't have a running process
+    // and the deque is empty, then there
+    // is nothing to do
     if (!peekFront(deque, (void **)&runningProcess)) {
       return;
     }
+
     startProcess(runningProcess);
+
+    // if the process that we have just started
+    // has a runtime of zero then we should
+    // remove it and try to load another one
+    pcb = processTable[runningProcess->id];
+    if (pcb->remainingTime == 0) {
+      removeFront(deque);
+      removeProcess(runningProcess);
+      free(runningProcess);
+      runningProcess = NULL;
+      continue;
+    }
+    break;
   }
 
-  PCB *pcb = processTable[runningProcess->id];
+  // the head of the deque should be
+  // the currently running process
+  // so we will increase the wait time
+  // of all the processes after the head
+  Node *process = deque->head->next;
+  while (process != NULL) {
+    int id = ((ProcessInfo *)(process->data))->id;
+    processTable[id]->waitingTime += 1;
+    process = process->next;
+  }
 
-  if (!pcb->remainingTime) {
-    removeFront(deque);
-    removeProcess(runningProcess);
-    runningProcess = NULL;
-  } else {
-    pcb->remainingTime -= 1;
-    pcb->executionTime += 1;
+  // update the pcb of the running process
+  pcb = processTable[runningProcess->id];
+  pcb->remainingTime -= 1;
+  pcb->executionTime += 1;
+
+  // if the running process has finished
+  // then we need to remove it
+  if (runningProcess != NULL) {
+    pcb = processTable[runningProcess->id];
+    if (!pcb->remainingTime) {
+      removeFront(deque);
+      removeProcess(runningProcess);
+      free(runningProcess);
+      runningProcess = NULL;
+    }
   }
 }
 
@@ -350,6 +384,8 @@ ProcessInfo addProcess(Process *process) {
   if (!pid) {
     execl("bin/process.out", "process.out", runtime, NULL);
   }
+  // we need to make sure the process has
+  // properly started before we stop it
   waitzero(procsemid);
   kill(pid, SIGSTOP);
   up(procsemid);
@@ -362,10 +398,10 @@ ProcessInfo addProcess(Process *process) {
 void startProcess(ProcessInfo *process) {
   kill(process->pid, SIGCONT);
   PCB *pcb = processTable[process->id];
-  pcb->startTime = getClk();
+  pcb->startTime = tick;
   printf("At\ttime\t%d\tprocess\t%d\tstarted\t"
          "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
-         getClk(), process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
+         tick, process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
          pcb->waitingTime);
 }
 
@@ -374,7 +410,7 @@ void resumeProcess(ProcessInfo *process) {
   PCB *pcb = processTable[process->id];
   printf("At\ttime\t%d\tprocess\t%d\tresumed\t"
          "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
-         getClk(), process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
+         tick, process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
          pcb->waitingTime);
 }
 
@@ -383,16 +419,20 @@ void stopProcess(ProcessInfo *process) {
   PCB *pcb = processTable[process->id];
   printf("At\ttime\t%d\tprocess\t%d\tresumed\t"
          "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
-         getClk(), process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
+         tick, process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
          pcb->waitingTime);
 }
 
 void removeProcess(ProcessInfo *process) {
+  // improve synchronization by waiting until
+  // the process has really ended before removing it
+  waitzero(procsemid);
+  up(procsemid);
   PCB *pcb = processTable[process->id];
-  pcb->startTime = getClk();
+  pcb->startTime = tick;
   printf("At\ttime\t%d\tprocess\t%d\tfinished"
-         "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
-         getClk(), process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
+         "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n\n",
+         tick, process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
          pcb->waitingTime);
   free(pcb);
 }
