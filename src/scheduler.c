@@ -2,12 +2,13 @@
 #include <unistd.h>
 
 static inline void setupIPC();
+static inline void loadBuffer();
+
 ProcessInfo addProcess(Process*);
 void startProcess(ProcessInfo*);
 void resumeProcess(ProcessInfo*);
 void stopProcess(ProcessInfo*);
 void removeProcess(ProcessInfo*);
-void clearResources(int);
 
 void fcfs();
 void sjf();
@@ -15,12 +16,17 @@ void hpf();
 void srtn();
 void rr();
 
+void clearResources(int);
+
 int tick;
 
 int shmid;
 int bufsemid;
 int procsemid;
 int *bufferaddr;
+
+int *messageCount;
+Process *buffer;
 
 Deque *arrived = NULL;
 
@@ -35,10 +41,10 @@ int processTableSize = PROCESS_TABLE_SIZE;
 int main(int argc, char *argv[]) {
   setupIPC();
 
-  processTable = malloc(processTableSize * sizeof(PCB *));
+  messageCount = (int *)bufferaddr;
+  buffer = (Process *)((void *)bufferaddr + sizeof(int));
 
-  int *messageCount = (int *)bufferaddr;
-  Process *buffer = (Process *)((void *)bufferaddr + sizeof(int));
+  processTable = malloc(processTableSize * sizeof(PCB *));
 
   signal(SIGINT, clearResources);
 
@@ -63,26 +69,10 @@ int main(int argc, char *argv[]) {
   printf("#At\ttime\tx\tprocess\ty\tstate\t"
          "\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n\n");
   while (true) {
-    down(bufsemid);
-    for (int i = 0; i < *messageCount; ++i) {
-      Process *currentProcess = buffer + i;
-      if (currentProcess->id >= processTableSize) {
-        int oldSize = processTableSize;
-        while (currentProcess->id >= processTableSize) {
-          processTableSize *= 2;
-        }
-        PCB **newProcessTable = malloc(processTableSize * sizeof(PCB *));
-        memcpy(newProcessTable, processTable, oldSize * sizeof(PCB *));
-        free(processTable);
-        processTable = newProcessTable;
-      }
-      ProcessInfo newProcess = addProcess(currentProcess);
-      pushBack(arrived, &newProcess);
-    }
-    *messageCount = 0;
-    up(bufsemid);
-
+    loadBuffer();
     tick = getClk();
+
+    bool ran = runningProcess != NULL;
 
     switch (sch) {
     case FCFS:
@@ -107,16 +97,144 @@ int main(int argc, char *argv[]) {
     }
 
     while (tick == getClk()) {
-      down(bufsemid);
-      if (*messageCount) {
+      if (!ran) {
+        down(bufsemid);
+        if (*messageCount) {
+          up(bufsemid);
+          break;
+        }
         up(bufsemid);
-        break;
       }
-      up(bufsemid);
       usleep(DELAY_TIME);
     }
   }
   clearResources(-1);
+}
+
+static inline void setupIPC() {
+  semun s;
+  s.val = 1;
+
+  shmid = shmget(BUFKEY, sizeof(int) + sizeof(Process) * BUFFER_SIZE, 0444);
+  while ((int)shmid == -1) {
+    printf("Wait! The buffer not initialized yet!\n");
+    sleep(1);
+    shmid = shmget(BUFKEY, sizeof(int) + sizeof(Process) * BUFFER_SIZE, 0444);
+  }
+
+  bufferaddr = (int *)shmat(shmid, (void *)0, 0);
+  if ((long)bufferaddr == -1) {
+    perror("Error in attaching the buffer in scheduler!");
+    exit(-1);
+  }
+
+  bufsemid = semget(BUFSEMKEY, 1, 0444);
+  while ((int)bufsemid == -1) {
+    printf("Wait! The semaphore not initialized yet!\n");
+    sleep(1);
+    bufsemid = semget(BUFSEMKEY, 1, 0444);
+  }
+
+  procsemid = semget(PROCSEMKEY, 1, 0644 | IPC_CREAT);
+  if ((int)procsemid == -1) {
+    perror("Error in creating semaphore!");
+    exit(-1);
+  }
+
+  if ((int)semctl(procsemid, 0, SETVAL, s) == -1) {
+    perror("Error in semctl!");
+    exit(-1);
+  }
+}
+
+static inline void loadBuffer() {
+    down(bufsemid);
+    for (int i = 0; i < *messageCount; ++i) {
+      Process *currentProcess = buffer + i;
+      if (currentProcess->id >= processTableSize) {
+        int oldSize = processTableSize;
+        while (currentProcess->id >= processTableSize) {
+          processTableSize *= 2;
+        }
+        PCB **newProcessTable = malloc(processTableSize * sizeof(PCB *));
+        memcpy(newProcessTable, processTable, oldSize * sizeof(PCB *));
+        free(processTable);
+        processTable = newProcessTable;
+      }
+      ProcessInfo newProcess = addProcess(currentProcess);
+      pushBack(arrived, &newProcess);
+    }
+    *messageCount = 0;
+    up(bufsemid);
+}
+
+ProcessInfo addProcess(Process *process) {
+  processTable[process->id] = malloc(sizeof(PCB));
+  PCB *pcb = processTable[process->id];
+  pcb->id = process->id;
+  pcb->arrival = process->arrival;
+  pcb->runtime = process->runtime;
+  pcb->priority = process->priority;
+  pcb->remainingTime = process->runtime;
+  pcb->executionTime = 0;
+  pcb->waitingTime = 0;
+  char runtime[8];
+  sprintf(runtime, "%d", process->runtime);
+  pid_t pid = fork();
+  if (!pid) {
+    execl("bin/process.out", "process.out", runtime, NULL);
+  }
+  // we need to make sure the process has
+  // properly started before we stop it
+  waitzero(procsemid);
+  kill(pid, SIGSTOP);
+  up(procsemid);
+  ProcessInfo newProcess;
+  newProcess.id = process->id;
+  newProcess.pid = pid;
+  return newProcess;
+}
+
+void startProcess(ProcessInfo *process) {
+  kill(process->pid, SIGCONT);
+  PCB *pcb = processTable[process->id];
+  pcb->startTime = tick;
+  printf("At\ttime\t%d\tprocess\t%d\tstarted\t"
+         "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
+         tick, process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
+         pcb->waitingTime);
+}
+
+void resumeProcess(ProcessInfo *process) {
+  kill(process->pid, SIGCONT);
+  PCB *pcb = processTable[process->id];
+  printf("At\ttime\t%d\tprocess\t%d\tresumed\t"
+         "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
+         tick, process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
+         pcb->waitingTime);
+}
+
+void stopProcess(ProcessInfo *process) {
+  kill(process->pid, SIGSTOP);
+  PCB *pcb = processTable[process->id];
+  printf("At\ttime\t%d\tprocess\t%d\tresumed\t"
+         "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
+         tick, process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
+         pcb->waitingTime);
+}
+
+void removeProcess(ProcessInfo *process) {
+  // improve synchronization by waiting until
+  // the process has really ended before removing it
+  waitzero(procsemid);
+  up(procsemid);
+  PCB *pcb = processTable[process->id];
+  pcb->startTime = tick;
+  printf("At\ttime\t%d\tprocess\t%d\tfinished"
+         "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n\n",
+         tick, process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
+         pcb->waitingTime);
+  free(pcb);
 }
 
 void fcfs() {
@@ -330,111 +448,6 @@ void rr() {
     if (pcb->remainingTime < 0)
       pcb->remainingTime = 0;
   }
-}
-
-static inline void setupIPC() {
-  semun s;
-  s.val = 1;
-
-  shmid = shmget(BUFKEY, sizeof(int) + sizeof(Process) * BUFFER_SIZE, 0444);
-  while ((int)shmid == -1) {
-    printf("Wait! The buffer not initialized yet!\n");
-    sleep(1);
-    shmid = shmget(BUFKEY, sizeof(int) + sizeof(Process) * BUFFER_SIZE, 0444);
-  }
-
-  bufferaddr = (int *)shmat(shmid, (void *)0, 0);
-  if ((long)bufferaddr == -1) {
-    perror("Error in attaching the buffer in scheduler!");
-    exit(-1);
-  }
-
-  bufsemid = semget(BUFSEMKEY, 1, 0444);
-  while ((int)bufsemid == -1) {
-    printf("Wait! The semaphore not initialized yet!\n");
-    sleep(1);
-    bufsemid = semget(BUFSEMKEY, 1, 0444);
-  }
-
-  procsemid = semget(PROCSEMKEY, 1, 0644 | IPC_CREAT);
-  if ((int)procsemid == -1) {
-    perror("Error in creating semaphore!");
-    exit(-1);
-  }
-
-  if ((int)semctl(procsemid, 0, SETVAL, s) == -1) {
-    perror("Error in semctl!");
-    exit(-1);
-  }
-}
-
-ProcessInfo addProcess(Process *process) {
-  processTable[process->id] = malloc(sizeof(PCB));
-  PCB *pcb = processTable[process->id];
-  pcb->id = process->id;
-  pcb->arrival = process->arrival;
-  pcb->runtime = process->runtime;
-  pcb->priority = process->priority;
-  pcb->remainingTime = process->runtime;
-  pcb->executionTime = 0;
-  pcb->waitingTime = 0;
-  char runtime[8];
-  sprintf(runtime, "%d", process->runtime);
-  pid_t pid = fork();
-  if (!pid) {
-    execl("bin/process.out", "process.out", runtime, NULL);
-  }
-  // we need to make sure the process has
-  // properly started before we stop it
-  waitzero(procsemid);
-  kill(pid, SIGSTOP);
-  up(procsemid);
-  ProcessInfo newProcess;
-  newProcess.id = process->id;
-  newProcess.pid = pid;
-  return newProcess;
-}
-
-void startProcess(ProcessInfo *process) {
-  kill(process->pid, SIGCONT);
-  PCB *pcb = processTable[process->id];
-  pcb->startTime = tick;
-  printf("At\ttime\t%d\tprocess\t%d\tstarted\t"
-         "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
-         tick, process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
-         pcb->waitingTime);
-}
-
-void resumeProcess(ProcessInfo *process) {
-  kill(process->pid, SIGCONT);
-  PCB *pcb = processTable[process->id];
-  printf("At\ttime\t%d\tprocess\t%d\tresumed\t"
-         "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
-         tick, process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
-         pcb->waitingTime);
-}
-
-void stopProcess(ProcessInfo *process) {
-  kill(process->pid, SIGSTOP);
-  PCB *pcb = processTable[process->id];
-  printf("At\ttime\t%d\tprocess\t%d\tresumed\t"
-         "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
-         tick, process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
-         pcb->waitingTime);
-}
-
-void removeProcess(ProcessInfo *process) {
-  // improve synchronization by waiting until
-  // the process has really ended before removing it
-  waitzero(procsemid);
-  up(procsemid);
-  PCB *pcb = processTable[process->id];
-  pcb->startTime = tick;
-  printf("At\ttime\t%d\tprocess\t%d\tfinished"
-         "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n\n",
-         tick, process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
-         pcb->waitingTime);
-  free(pcb);
 }
 
 void clearResources(int signum) {
