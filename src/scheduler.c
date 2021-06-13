@@ -433,25 +433,24 @@ void rr() {
     while (tik + QUANTA < getClk()) {
       usleep(DELAY_TIME);
     }
-    free(runningProcess);
-    dequeueCQ(circularQueue, (void **)&runningProcess);
-    if (peekCQ(circularQueue, (void **)&processInfo)) {
-      stopProcess(runningProcess);
-    }
-    enqueueCQ(circularQueue, runningProcess);
-  }
+    PCB *pcb = processTable[runningProcess->id];
 
-  PCB *pcb = processTable[runningProcess->id];
-
-  if (!pcb->remainingTime) {
-    removeCQ(circularQueue);
-    removeProcess(runningProcess);
-    runningProcess = NULL;
-  } else {
+    if (!pcb->remainingTime) {
+      removeCQ(circularQueue);
+      removeProcess(runningProcess);
+      runningProcess = NULL;
+    } 
+    else {
     pcb->remainingTime -= QUANTA;
     pcb->executionTime += QUANTA;
     if (pcb->remainingTime < 0)
       pcb->remainingTime = 0;
+  }
+    if (circularQueue->head->next && runningProcess != NULL) {
+      stopProcess(runningProcess);
+      runningProcess = (ProcessInfo*)(circularQueue->head->next->data);
+      printf("Test %d\n",runningProcess->id);
+    }
   }
 }
 
