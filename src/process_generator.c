@@ -87,10 +87,8 @@ int main(int argc, char *argv[]) {
     usleep(DELAY_TIME);
   }
 
-  printf("Expected Endtime: %d\n", endtime);
-
   // make sure everything ended properly
-  sleep(5);
+  sleep(3);
 
   clearResources(-1);
 }

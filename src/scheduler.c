@@ -1,5 +1,4 @@
 #include "headers.h"
-#include <unistd.h>
 
 static inline void setupIPC();
 static inline void loadBuffer(bool);
@@ -39,7 +38,7 @@ PCB **processTable = NULL;
 int processTableSize = PROCESS_TABLE_SIZE;
 
 int totalCount = 0;
-int totalWTA = 0;
+float totalWTA = 0;
 int totalWait = 0;
 int utilization = 0;
 
@@ -74,6 +73,10 @@ int main(int argc, char *argv[]) {
   bool ran = false;
   printf("#At\ttime\tx\tprocess\ty\tstate\t"
          "\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n");
+  FILE *pFile = fopen("scheduler.log", "w");
+  fprintf(pFile, "#At\ttime\tx\tprocess\ty\tstate\t"
+                 "\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n");
+  fclose(pFile);
   while (true) {
     // ensure the process scheduler sent the new processes
     usleep(DELAY_TIME);
@@ -214,12 +217,22 @@ ProcessInfo addProcess(Process *process) {
 void contProcess(ProcessInfo *process) {
   kill(process->pid, SIGCONT);
   PCB *pcb = processTable[process->id];
+  char *started = "resumed";
   if (pcb->start < 0) {
     pcb->start = tick;
+    started = "started";
   }
-  printf("At\ttime\t%d\tprocess\t%d\tstarted\t"
+  printf("At\ttime\t%d\tprocess\t%d\t%s\t"
          "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
-         tick, process->id, pcb->arrival, pcb->runtime, pcb->remain, pcb->wait);
+         tick, process->id, started, pcb->arrival, pcb->runtime, pcb->remain,
+         pcb->wait);
+  FILE *pFile = fopen("scheduler.log", "a");
+  fprintf(pFile,
+          "At\ttime\t%d\tprocess\t%d\t%s\t"
+          "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
+          tick, process->id, started, pcb->arrival, pcb->runtime, pcb->remain,
+          pcb->wait);
+  fclose(pFile);
 }
 
 void stopProcess(ProcessInfo *process) {
@@ -228,6 +241,13 @@ void stopProcess(ProcessInfo *process) {
   printf("At\ttime\t%d\tprocess\t%d\tstopped\t"
          "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
          tick, process->id, pcb->arrival, pcb->runtime, pcb->remain, pcb->wait);
+  FILE *pFile = fopen("scheduler.log", "a");
+  fprintf(pFile,
+          "At\ttime\t%d\tprocess\t%d\tstopped\t"
+          "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
+          tick, process->id, pcb->arrival, pcb->runtime, pcb->remain,
+          pcb->wait);
+  fclose(pFile);
 }
 
 void removeProcess(ProcessInfo *process) {
@@ -238,9 +258,22 @@ void removeProcess(ProcessInfo *process) {
   totalWait += pcb->wait;
   printf("At\ttime\t%d\tprocess\t%d\tfinished"
          "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d"
-         "TA\t%d\tWTA\t%0.2f\n",
+         "\tTA\t%d\tWTA\t%0.2f\n",
          tick, process->id, pcb->arrival, pcb->runtime, pcb->remain, pcb->wait,
          tick - pcb->arrival, WTA);
+  FILE *pFile = fopen("scheduler.log", "a");
+  fprintf(pFile,
+          "At\ttime\t%d\tprocess\t%d\tfinished"
+          "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d"
+          "\tTA\t%d\tWTA\t%0.2f\n",
+          tick, process->id, pcb->arrival, pcb->runtime, pcb->remain, pcb->wait,
+          tick - pcb->arrival, WTA);
+  fclose(pFile);
+  pFile = fopen("scheduler.perf", "w");
+  fprintf(pFile, "CPU utilization = %0.2f%%\n", 100 * utilization / (float)(tick - 1));
+  fprintf(pFile, "Avg WTA = %0.2f\n", totalWTA / (float)totalCount);
+  fprintf(pFile, "Avg Waiting = %0.2f\n", totalWait / (float)totalCount);
+  fclose(pFile);
   free(pcb);
 }
 
@@ -496,7 +529,7 @@ bool srtn(){
     }
   }
 
-  // we need to change the priorty of the running process
+  // we need to change the priority of the running process
   // to the remaining time instead of the total runtime
   if (runningProcess != NULL) {
     pcb = processTable[runningProcess->id];

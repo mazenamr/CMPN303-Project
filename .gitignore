@@ -3,3 +3,6 @@ bin/
 .vim/
 .vscode/
 !src/.vscode/
+scheduler.perf
+scheduler.log
+memory.log

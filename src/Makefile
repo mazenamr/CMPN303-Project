@@ -1,3 +1,6 @@
+COUNT?=4
+SCH?=1
+
 build:
 	[ -d bin ] || mkdir bin
 	gcc process_generator.c -o bin/process_generator.out
@@ -20,12 +23,12 @@ clean:
 all: clean build
 
 debug:
-	./bin/test_generator.out ./bin/processes.txt 4
-	gdb ./bin/process_generator.out ./bin/processes.txt 2
+	./bin/test_generator.out ./bin/processes.txt $(COUNT)
+	gdb ./bin/process_generator.out ./bin/processes.txt $(SCH)
 
 run:
-	./bin/test_generator.out ./bin/processes.txt 8
-	./bin/process_generator.out ./bin/processes.txt 1
+	./bin/test_generator.out ./bin/processes.txt $(COUNT)
+	./bin/process_generator.out ./bin/processes.txt $(SCH)
 
 run-no-gen:
-	./bin/process_generator.out ./bin/processes.txt 1
+	./bin/process_generator.out ./bin/processes.txt $(SCH)
