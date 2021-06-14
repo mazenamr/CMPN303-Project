@@ -14,6 +14,11 @@ bool sjf();
 bool hpf();
 bool srtn();
 bool rr();
+
+bool firstFit(Process*);
+bool nextFit(Process*);
+bool bestFit(Process*);
+bool buddy(Process*); 
 bool memory[1024]= {0};                     //which means that all memory is free
 
 
@@ -30,6 +35,9 @@ int *messageCount;
 Process *buffer;
 
 Deque *arrived = NULL;
+
+MEMORY_ALLOCATION_ALGORTHIM memAlgo; 
+bool allocate;                       //to indicate whehter the memory allocation alogrthim was able to allocate memory for the given process
 
 Deque *deque = NULL;
 PriorityQueue *priorityQueue = NULL;
@@ -66,10 +74,17 @@ int main(int argc, char *argv[]) {
 
   SCHEDULING_ALGORITHM sch = atoi(argv[1]);
   MEMORY_ALLOCATION_ALGORTHIM mem  = atoi(argv[2]);
+  memAlgo = mem;
 
-  if (sch < FCFS || sch > RR) {
+  if (sch < FCFS || sch > RR ) {
     printf("Invalid scheduling algorithm!\n");
     printSchedulingAlgorithms();
+    exit(-1);
+  }
+
+  if (mem < FIRSTFIT || mem > BUDDY ) {
+    printf("Invalid Memory allocation algorithm!\n");
+    printMemoryAllocationALgorthims();
     exit(-1);
   }
 
@@ -182,7 +197,34 @@ static inline void loadBuffer(bool ran) {
       free(processTable);
       processTable = newProcessTable;
     }
-    ProcessInfo newProcess = addProcess(currentProcess);
+
+    switch (memAlgo) {
+      case FIRSTFIT:
+        allocate = firstFit(currentProcess);
+        break;
+      case NEXTFIT:
+        allocate = nextFit(currentProcess);
+        break;
+      case BESTFIT:
+        allocate = bestFit(currentProcess);
+        break;
+      case BUDDY:
+        allocate = buddy(currentProcess);
+        break;
+      default:
+        printf("Invalid memory allocation algorithm!\n");
+        printMemoryAllocationALgorthims();
+        exit(-1);
+    }
+    ProcessInfo newProcess;
+    if (allocate || true)           // true to be removed later, just to test sch algo 
+    {
+      newProcess = addProcess(currentProcess);
+    }
+    else 
+    {
+      // add waiting 
+    }
     if (ran) {
       (processTable[newProcess.id])->wait += 1;
     }
@@ -191,6 +233,7 @@ static inline void loadBuffer(bool ran) {
   *messageCount = 0;
   up(bufsemid);
 }
+
 
 ProcessInfo addProcess(Process *process) {
   processTable[process->id] = malloc(sizeof(PCB));
@@ -670,6 +713,25 @@ bool rr() {
   pcb->execution += 1;
 
   return true;
+}
+
+bool firstFit(Process* process){
+
+}
+
+
+bool nextFit(Process* process){
+
+}
+
+
+bool bestFit(Process* process){
+
+}
+
+
+bool buddy(Process* process){
+
 }
 
 void clearResources(int signum) {
