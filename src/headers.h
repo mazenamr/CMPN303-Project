@@ -41,6 +41,13 @@ typedef enum SCHEDULING_ALGORITHM {
   RR
 } SCHEDULING_ALGORITHM;
 
+typedef enum MEMORY_ALLOCATION_ALGORTHIM{
+  FIRSTFIT,
+  NEXTFIT,
+  BESTFIT,
+  BUDDY
+}MEMORY_ALLOCATION_ALGORTHIM;
+
 typedef enum PROCESS_STATE {
   READY,
   RUNNING,
@@ -56,6 +63,7 @@ typedef struct Process {
   int arrival;
   int runtime;
   int priority;
+  int mem;
 } Process;
 
 typedef struct ProcessInfo {
@@ -73,6 +81,7 @@ typedef struct PCB
   int arrival;
   int runtime;
   int priority;
+  int mem;
   int start;
   int remain;
   int execution;

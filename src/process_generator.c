@@ -23,15 +23,16 @@ int main(int argc, char *argv[]) {
 
   signal(SIGINT, clearResources);
 
-  if (argc < 3) {
+  if (argc < 4) {
     printf("Too few arguments!\n");
     printHelp();
     exit(-1);
   }
 
   SCHEDULING_ALGORITHM sch = atoi(argv[2]);
+  MEMORY_ALLOCATION_ALGORTHIM mem = atoi(argv[3]);
 
-  if (sch < FCFS || sch > RR) {
+  if (sch < FCFS || sch > RR || mem < FIRSTFIT || mem > BUDDY) {
     printf("Invalid scheduling algorithm!\n");
     printHelp();
     exit(-1);
@@ -139,8 +140,8 @@ static inline void getInput(char *file) {
   while (fscanf(inputFile, " %[^\n]s", line) != EOF) {
     Process process;
     if (line[0] != '#') {
-      if (sscanf(line, "%d\t%d\t%d\t%d", &(process.id), &(process.arrival),
-                 &(process.runtime), &(process.priority)) < 4) {
+      if (sscanf(line, "%d\t%d\t%d\t%d\t%d", &(process.id), &(process.arrival),
+                 &(process.runtime), &(process.priority), &(process.mem)) < 5) {
         printf("Error in input file line %d!\n", lineNumber);
         exit(-1);
       }
