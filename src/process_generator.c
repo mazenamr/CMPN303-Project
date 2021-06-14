@@ -76,7 +76,9 @@ int main(int argc, char *argv[]) {
       break;
     }
     up(bufsemid);
-    while (tick == getClk());
+    while (tick == getClk()) {
+      usleep(DELAY_TIME / 10);
+    }
   }
   free(currentProcess);
 
@@ -87,7 +89,7 @@ int main(int argc, char *argv[]) {
   printf("Expected Endtime: %d\n", endtime);
 
   // make sure everything ended properly
-  sleep(1);
+  sleep(5);
 
   clearResources(-1);
 }

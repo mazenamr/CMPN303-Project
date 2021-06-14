@@ -2,7 +2,7 @@
 #include <unistd.h>
 
 static inline void setupIPC();
-static inline void loadBuffer();
+static inline void loadBuffer(bool);
 
 ProcessInfo addProcess(Process*);
 void contProcess(ProcessInfo*);
@@ -70,7 +70,9 @@ int main(int argc, char *argv[]) {
   printf("#At\ttime\tx\tprocess\ty\tstate\t"
          "\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n");
   while (true) {
-    loadBuffer();
+    // ensure the process scheduler sent the new processes
+    usleep(DELAY_TIME);
+    loadBuffer(ran);
     tick = getClk();
 
     if (!ran) {
@@ -104,7 +106,6 @@ int main(int argc, char *argv[]) {
         break;
       }
       up(bufsemid);
-      usleep(DELAY_TIME);
       if (tick != getClk()) {
         ran = false;
         break;
@@ -150,7 +151,7 @@ static inline void setupIPC() {
   }
 }
 
-static inline void loadBuffer() {
+static inline void loadBuffer(bool ran) {
     down(bufsemid);
     for (int i = 0; i < *messageCount; ++i) {
       Process *currentProcess = buffer + i;
@@ -165,6 +166,9 @@ static inline void loadBuffer() {
         processTable = newProcessTable;
       }
       ProcessInfo newProcess = addProcess(currentProcess);
+      if (ran) {
+        (processTable[newProcess.id])->waitingTime += 1;
+      }
       pushBack(arrived, &newProcess);
     }
     *messageCount = 0;
@@ -302,6 +306,18 @@ bool sjf() {
     priorityQueue = newPriorityQueue(sizeof(ProcessInfo));
   }
 
+  // if the running process has finished
+  // then we need to remove it
+  if (runningProcess != NULL) {
+    pcb = processTable[runningProcess->id];
+    if (pcb->remainingTime <= 0) {
+      removePQ(priorityQueue);
+      removeProcess(runningProcess);
+      free(runningProcess);
+      runningProcess = NULL;
+    }
+  }
+
   // here we only load the newly arrived processes when the
   // priority queue is empty because we need to make sure
   // that the head of the priority queue doesn't change
@@ -319,18 +335,6 @@ bool sjf() {
       enqueuePQ(priorityQueue, processInfo, -1 * (pcb->runtime));
     }
     free(processInfo);
-  }
-
-  // if the running process has finished
-  // then we need to remove it
-  if (runningProcess != NULL) {
-    pcb = processTable[runningProcess->id];
-    if (pcb->remainingTime <= 0) {
-      removePQ(priorityQueue);
-      removeProcess(runningProcess);
-      free(runningProcess);
-      runningProcess = NULL;
-    }
   }
 
   // if we don't have a running process then we
@@ -354,6 +358,15 @@ bool sjf() {
     int id = ((ProcessInfo *)(process->data))->id;
     processTable[id]->waitingTime += 1;
     process = process->next;
+  }
+
+  // we also need to update the wait time
+  // of the processes that arrived
+  Node *arrivedProcess = arrived->head;
+  while (arrivedProcess != NULL) {
+    int id = ((ProcessInfo *)(arrivedProcess->data))->id;
+    processTable[id]->waitingTime += 1;
+    arrivedProcess = arrivedProcess->next;
   }
 
   // update the pcb of the running process

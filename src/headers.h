@@ -25,7 +25,7 @@
 
 // 1,000,000 = 1 sec
 #define CLOCK_TICK_DURATION 1000000
-#define DELAY_TIME 50
+#define DELAY_TIME 1000
 
 #define QUANTA 3
 #define BUFFER_SIZE 128

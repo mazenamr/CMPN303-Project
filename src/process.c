@@ -26,9 +26,7 @@ int main(int argc, char *argv[]) {
 
   down(procsemid);
 
-  while (!started) {
-    usleep(DELAY_TIME);
-  }
+  while (!started);
 
   while (remainingTime > 0) {
     int tick = getClk();
@@ -38,8 +36,8 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  printf("Process %d died at %d\n", getpid(),
-         getClk(), atoi(argv[1]));
+  // printf("Process %d died at %d\n", getpid(),
+  //        getClk(), atoi(argv[1]));
 
   destroyClk(false);
 
