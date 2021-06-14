@@ -43,8 +43,6 @@ int main(int argc, char *argv[]) {
 
   destroyClk(false);
 
-  down(procsemid);
-
   return 0;
 }
 

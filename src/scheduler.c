@@ -221,12 +221,7 @@ void stopProcess(ProcessInfo *process) {
 }
 
 void removeProcess(ProcessInfo *process) {
-  // improve synchronization by waiting until
-  // the process has really ended before removing it
-  waitzero(procsemid);
-  up(procsemid);
   PCB *pcb = processTable[process->id];
-  pcb->startTime = tick;
   printf("At\ttime\t%d\tprocess\t%d\tfinished"
          "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
          tick, process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
@@ -236,13 +231,15 @@ void removeProcess(ProcessInfo *process) {
 
 bool fcfs() {
   PCB *pcb;
+  ProcessInfo *processInfo;
+
   // initialize deque of project info if it's not initialized
   if (deque == NULL) {
     deque = newDeque(sizeof(ProcessInfo));
   }
 
   // load the newly arrived processes into the deque
-  ProcessInfo *processInfo = NULL;
+  processInfo = NULL;
   while (popFront(arrived, (void **)&processInfo)) {
     pushBack(deque, processInfo);
   }
@@ -257,7 +254,7 @@ bool fcfs() {
   // then we need to remove it
   if (runningProcess != NULL) {
     pcb = processTable[runningProcess->id];
-    if (!pcb->remainingTime) {
+    if (pcb->remainingTime <= 0) {
       removeFront(deque);
       removeProcess(runningProcess);
       free(runningProcess);
@@ -299,6 +296,7 @@ bool fcfs() {
 bool sjf() {
   PCB *pcb;
   ProcessInfo *processInfo;
+
   // initialize priority queue of project info if it's not initialized
   if (priorityQueue == NULL) {
     priorityQueue = newPriorityQueue(sizeof(ProcessInfo));
@@ -327,7 +325,7 @@ bool sjf() {
   // then we need to remove it
   if (runningProcess != NULL) {
     pcb = processTable[runningProcess->id];
-    if (!pcb->remainingTime) {
+    if (pcb->remainingTime <= 0) {
       removePQ(priorityQueue);
       removeProcess(runningProcess);
       free(runningProcess);
@@ -369,6 +367,7 @@ bool sjf() {
 bool hpf() {
   PCB *pcb;
   ProcessInfo *processInfo;
+
   // initialize priority queue of project info if it's not initialized
   if (priorityQueue == NULL) {
     priorityQueue = newPriorityQueue(sizeof(ProcessInfo));
@@ -385,7 +384,7 @@ bool hpf() {
   // then we need to remove it
   if (runningProcess != NULL) {
     pcb = processTable[runningProcess->id];
-    if (!pcb->remainingTime) {
+    if (pcb->remainingTime <= 0) {
       removePQ(priorityQueue);
       removeProcess(runningProcess);
       free(runningProcess);
@@ -399,6 +398,7 @@ bool hpf() {
     pcb = processTable[processInfo->id];
     enqueuePQ(priorityQueue, processInfo, -1 * (pcb->priority));
   }
+  free(processInfo);
 
   // if we don't have a running process then we
   // should start the next process in the priority queue
@@ -413,6 +413,7 @@ bool hpf() {
   } else {
     // we always switch the running process to the first
     // process in the priority queue
+    processInfo = NULL;
     peekPQ(priorityQueue, (void **)&processInfo);
     if (processInfo->id != runningProcess->id) {
       stopProcess(runningProcess);
@@ -447,6 +448,7 @@ bool hpf() {
 bool srtn(){
   PCB *pcb;
   ProcessInfo *processInfo;
+
   // initialize priority queue of project info if it's not initialized
   if (priorityQueue == NULL) {
     priorityQueue = newPriorityQueue(sizeof(ProcessInfo));
@@ -463,7 +465,7 @@ bool srtn(){
   // then we need to remove it
   if (runningProcess != NULL) {
     pcb = processTable[runningProcess->id];
-    if (!pcb->remainingTime) {
+    if (pcb->remainingTime <= 0) {
       removePQ(priorityQueue);
       removeProcess(runningProcess);
       free(runningProcess);
@@ -484,6 +486,7 @@ bool srtn(){
     pcb = processTable[processInfo->id];
     enqueuePQ(priorityQueue, processInfo, -1 * (pcb->runtime));
   }
+  free(processInfo);
 
   // if we don't have a running process then we
   // should start the next process in the priority queue
@@ -498,6 +501,7 @@ bool srtn(){
   } else {
     // we always switch the running process to the first
     // process in the priority queue
+    processInfo = NULL;
     peekPQ(priorityQueue, (void **)&processInfo);
     if (processInfo->id != runningProcess->id) {
       stopProcess(runningProcess);
@@ -555,6 +559,7 @@ bool rr() {
       removeProcess(runningProcess);
       free(runningProcess);
       runningProcess = NULL;
+      q = 0;
     }
   }
 

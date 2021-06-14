@@ -69,8 +69,8 @@ int main(int argc, char *argv[]) {
           down(bufsemid);
         }
         memcpy(buffer + (*messageCount)++, currentProcess, sizeof(Process));
-        endtime = (getClk() > endtime) ? getClk() : endtime;
-        endtime += currentProcess->runtime + 1;
+        endtime = (currentProcess->arrival > endtime) ? currentProcess->arrival : endtime;
+        endtime += currentProcess->runtime;
         continue;
       }
       break;
@@ -80,10 +80,11 @@ int main(int argc, char *argv[]) {
   }
   free(currentProcess);
 
-  while (true) {
-  //while (getClk() <= endtime) {
+  while (getClk() <= endtime) {
     usleep(DELAY_TIME);
   }
+
+  printf("Expected Endtime: %d\n", endtime);
 
   // make sure everything ended properly
   sleep(1);
