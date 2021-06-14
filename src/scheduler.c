@@ -14,6 +14,8 @@ bool sjf();
 bool hpf();
 bool srtn();
 bool rr();
+bool memory[1024]= {0};                     //which means that all memory is free
+
 
 void clearResources(int);
 
@@ -32,6 +34,7 @@ Deque *arrived = NULL;
 Deque *deque = NULL;
 PriorityQueue *priorityQueue = NULL;
 CircularQueue *circularQueue = NULL;
+Deque *waiting = NULL;
 
 ProcessInfo *runningProcess = NULL;
 PCB **processTable = NULL;
@@ -54,13 +57,15 @@ int main(int argc, char *argv[]) {
 
   initClk();
 
-  if (argc < 2) {
-    printf("No scheduling algorithm provided!\n");
+  if (argc < 3) {
+    printf("No scheduling algorithm or memory allocation algirthim are provided!\n");
+    printMemoryAllocationALgorthims();
     printSchedulingAlgorithms();
     exit(-1);
   }
 
   SCHEDULING_ALGORITHM sch = atoi(argv[1]);
+  MEMORY_ALLOCATION_ALGORTHIM mem  = atoi(argv[2]);
 
   if (sch < FCFS || sch > RR) {
     printf("Invalid scheduling algorithm!\n");
@@ -166,6 +171,7 @@ static inline void loadBuffer(bool ran) {
   down(bufsemid);
   for (int i = 0; i < *messageCount; ++i) {
     Process *currentProcess = buffer + i;
+    //if we reached the limit of the size of the process table then we double it.
     if (currentProcess->id >= processTableSize) {
       int oldSize = processTableSize;
       while (currentProcess->id >= processTableSize) {
@@ -195,6 +201,7 @@ ProcessInfo addProcess(Process *process) {
   pcb->priority = process->priority;
   pcb->start = -1;
   pcb->remain = process->runtime;
+  pcb->mem = process->mem;
   pcb->execution = 0;
   pcb->wait = 0;
   char runtime[8];
