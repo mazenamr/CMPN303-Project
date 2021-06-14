@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
 
   bool ran = false;
   printf("#At\ttime\tx\tprocess\ty\tstate\t"
-         "\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n\n");
+         "\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n");
   while (true) {
     loadBuffer();
     tick = getClk();
@@ -178,6 +178,7 @@ ProcessInfo addProcess(Process *process) {
   pcb->arrival = process->arrival;
   pcb->runtime = process->runtime;
   pcb->priority = process->priority;
+  pcb->startTime = -1;
   pcb->remainingTime = process->runtime;
   pcb->executionTime = 0;
   pcb->waitingTime = 0;
@@ -201,7 +202,9 @@ ProcessInfo addProcess(Process *process) {
 void contProcess(ProcessInfo *process) {
   kill(process->pid, SIGCONT);
   PCB *pcb = processTable[process->id];
-  pcb->startTime = tick;
+  if (pcb->startTime < 0) {
+    pcb->startTime = tick;
+  }
   printf("At\ttime\t%d\tprocess\t%d\tstarted\t"
          "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
          tick, process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
@@ -225,7 +228,7 @@ void removeProcess(ProcessInfo *process) {
   PCB *pcb = processTable[process->id];
   pcb->startTime = tick;
   printf("At\ttime\t%d\tprocess\t%d\tfinished"
-         "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n\n",
+         "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
          tick, process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
          pcb->waitingTime);
   free(pcb);
@@ -248,6 +251,18 @@ bool fcfs() {
   // if the deque is empty, there is nothing to do
   if (deque->head == NULL) {
     return false;
+  }
+
+  // if the running process has finished
+  // then we need to remove it
+  if (runningProcess != NULL) {
+    pcb = processTable[runningProcess->id];
+    if (!pcb->remainingTime) {
+      removeFront(deque);
+      removeProcess(runningProcess);
+      free(runningProcess);
+      runningProcess = NULL;
+    }
   }
 
   // if we don't have a running process then we
@@ -278,19 +293,7 @@ bool fcfs() {
   pcb->remainingTime -= 1;
   pcb->executionTime += 1;
 
-  // if the running process has finished
-  // then we need to remove it
-  if (runningProcess != NULL) {
-    pcb = processTable[runningProcess->id];
-    if (!pcb->remainingTime) {
-      removeFront(deque);
-      removeProcess(runningProcess);
-      free(runningProcess);
-      runningProcess = NULL;
-    }
-    return true;
-  }
-  return false;
+  return true;
 }
 
 bool sjf() {
@@ -301,8 +304,13 @@ bool sjf() {
     priorityQueue = newPriorityQueue(sizeof(ProcessInfo));
   }
 
-  // if the priority queue is empty, there is nothing to do
+  // here we only load the newly arrived processes when the
+  // priority queue is empty because we need to make sure
+  // that the head of the priority queue doesn't change
+  // so that we can easily dequeue it
   if (priorityQueue->head == NULL) {
+    // if the priority queue is empty and no new processes
+    // have arrived, there is nothing to do
     if (arrived->head == NULL) {
       return false;
     }
@@ -313,6 +321,18 @@ bool sjf() {
       enqueuePQ(priorityQueue, processInfo, -1 * (pcb->runtime));
     }
     free(processInfo);
+  }
+
+  // if the running process has finished
+  // then we need to remove it
+  if (runningProcess != NULL) {
+    pcb = processTable[runningProcess->id];
+    if (!pcb->remainingTime) {
+      removePQ(priorityQueue);
+      removeProcess(runningProcess);
+      free(runningProcess);
+      runningProcess = NULL;
+    }
   }
 
   // if we don't have a running process then we
@@ -343,23 +363,84 @@ bool sjf() {
   pcb->remainingTime -= 1;
   pcb->executionTime += 1;
 
+  return true;
+}
+
+bool hpf() {
+  PCB *pcb;
+  ProcessInfo *processInfo;
+  // initialize priority queue of project info if it's not initialized
+  if (priorityQueue == NULL) {
+    priorityQueue = newPriorityQueue(sizeof(ProcessInfo));
+  }
+
+  // if the priority queue is empty, there is nothing to do
+  if (priorityQueue->head == NULL) {
+    if (arrived->head == NULL) {
+      return false;
+    }
+  }
+
   // if the running process has finished
   // then we need to remove it
   if (runningProcess != NULL) {
     pcb = processTable[runningProcess->id];
     if (!pcb->remainingTime) {
-      // removeElement(priorityQueue, runningProcess);
       removePQ(priorityQueue);
       removeProcess(runningProcess);
       free(runningProcess);
       runningProcess = NULL;
     }
-    return true;
   }
-  return false;
-}
 
-bool hpf() {
+  // load the newly arrived processes into the priority queue
+  processInfo = NULL;
+  while (popFront(arrived, (void **)&processInfo)) {
+    pcb = processTable[processInfo->id];
+    enqueuePQ(priorityQueue, processInfo, -1 * (pcb->priority));
+  }
+
+  // if we don't have a running process then we
+  // should start the next process in the priority queue
+  if (runningProcess == NULL) {
+    // if we don't have a running process
+    // and the priority queue is empty, then there
+    // is nothing to do
+    if (!peekPQ(priorityQueue, (void **)&runningProcess)) {
+      return false;
+    }
+    contProcess(runningProcess);
+  } else {
+    // we always switch the running process to the first
+    // process in the priority queue
+    peekPQ(priorityQueue, (void **)&processInfo);
+    if (processInfo->id != runningProcess->id) {
+      stopProcess(runningProcess);
+      free(runningProcess);
+      runningProcess = processInfo;
+      contProcess(runningProcess);
+    }
+    else {
+      free(processInfo);
+    }
+  }
+
+  // the head of the priority queue should be
+  // the currently running process
+  // so we will increase the wait time
+  // of all the processes after the head
+  PriorityNode *process = priorityQueue->head->next;
+  while (process != NULL) {
+    int id = ((ProcessInfo *)(process->data))->id;
+    processTable[id]->waitingTime += 1;
+    process = process->next;
+  }
+
+  // update the pcb of the running process
+  pcb = processTable[runningProcess->id];
+  pcb->remainingTime -= 1;
+  pcb->executionTime += 1;
+
   return true;
 }
 
@@ -375,6 +456,18 @@ bool srtn(){
   if (priorityQueue->head == NULL) {
     if (arrived->head == NULL) {
       return false;
+    }
+  }
+
+  // if the running process has finished
+  // then we need to remove it
+  if (runningProcess != NULL) {
+    pcb = processTable[runningProcess->id];
+    if (!pcb->remainingTime) {
+      removePQ(priorityQueue);
+      removeProcess(runningProcess);
+      free(runningProcess);
+      runningProcess = NULL;
     }
   }
 
@@ -432,6 +525,9 @@ bool srtn(){
   pcb = processTable[runningProcess->id];
   pcb->remainingTime -= 1;
   pcb->executionTime += 1;
+
+  return true;
+}
 
   // if the running process has finished
   // then we need to remove it

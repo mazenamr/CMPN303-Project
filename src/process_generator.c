@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
   // add each process to the buffer on reaching its arrival time
   Process *currentProcess = NULL;
   int endtime = getClk();
-  while (true) {
+  while (processes->length) {
     down(bufsemid);
     int tick = getClk();
     while (peekFront(processes, (void **)&currentProcess)) {
@@ -76,16 +76,17 @@ int main(int argc, char *argv[]) {
       break;
     }
     up(bufsemid);
-    while (tick == getClk()) {
-      usleep(DELAY_TIME);
-    }
+    while (tick == getClk());
   }
   free(currentProcess);
 
   while (true) {
-  // while (getClk() <= endtime + 2) {
+  //while (getClk() <= endtime) {
     usleep(DELAY_TIME);
   }
+
+  // make sure everything ended properly
+  sleep(1);
 
   clearResources(-1);
 }

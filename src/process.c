@@ -3,9 +3,6 @@
 void cont(int);
 
 int remainingTime;
-int startTime;
-int waitTime = 0;
-int tick;
 bool started = false;
 
 int main(int argc, char *argv[]) {
@@ -25,28 +22,24 @@ int main(int argc, char *argv[]) {
   }
 
   initClk();
-  tick = getClk();
   remainingTime = atoi(argv[1]);
 
   down(procsemid);
 
   while (!started) {
-    tick = getClk();
     usleep(DELAY_TIME);
   }
 
-  startTime = getClk();
-
   while (remainingTime > 0) {
-    tick = getClk();
+    int tick = getClk();
     --remainingTime;
     while (tick == getClk()) {
       usleep(DELAY_TIME);
     }
   }
 
-  printf("Process %d died at %d with run time %d and wait time %d\n", getpid(),
-         tick, atoi(argv[1]), waitTime);
+  printf("Process %d died at %d\n", getpid(),
+         getClk(), atoi(argv[1]));
 
   destroyClk(false);
 
@@ -57,5 +50,4 @@ int main(int argc, char *argv[]) {
 
 void cont(int signum) {
   started = true;
-  waitTime += (getClk() - tick);
 }
