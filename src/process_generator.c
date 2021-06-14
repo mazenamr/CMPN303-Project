@@ -69,7 +69,8 @@ int main(int argc, char *argv[]) {
           down(bufsemid);
         }
         memcpy(buffer + (*messageCount)++, currentProcess, sizeof(Process));
-        endtime = (currentProcess->arrival > endtime) ? currentProcess->arrival : endtime;
+        endtime = (currentProcess->arrival > endtime) ? currentProcess->arrival
+                                                      : endtime;
         endtime += currentProcess->runtime;
         continue;
       }

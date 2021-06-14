@@ -73,10 +73,10 @@ typedef struct PCB
   int arrival;
   int runtime;
   int priority;
-  int startTime;
-  int remainingTime;
-  int executionTime;
-  int waitingTime;
+  int start;
+  int remain;
+  int execution;
+  int wait;
   PROCESS_STATE state;
 }PCB;
 

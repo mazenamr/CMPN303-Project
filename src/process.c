@@ -2,7 +2,7 @@
 
 void cont(int);
 
-int remainingTime;
+int remain;
 bool started = false;
 
 int main(int argc, char *argv[]) {
@@ -22,15 +22,17 @@ int main(int argc, char *argv[]) {
   }
 
   initClk();
-  remainingTime = atoi(argv[1]);
+  remain = atoi(argv[1]);
 
   down(procsemid);
 
-  while (!started);
+  while (!started) {
+    usleep(DELAY_TIME);
+  }
 
-  while (remainingTime > 0) {
+  while (remain > 0) {
     int tick = getClk();
-    --remainingTime;
+    --remain;
     while (tick == getClk()) {
       usleep(DELAY_TIME);
     }

@@ -38,6 +38,11 @@ ProcessInfo *runningProcess = NULL;
 PCB **processTable = NULL;
 int processTableSize = PROCESS_TABLE_SIZE;
 
+int totalCount = 0;
+int totalWTA = 0;
+int totalWait = 0;
+int utilization = 0;
+
 int main(int argc, char *argv[]) {
   setupIPC();
 
@@ -97,6 +102,9 @@ int main(int argc, char *argv[]) {
         printSchedulingAlgorithms();
         exit(-1);
       }
+      if (ran) {
+        utilization += 1;
+      }
     }
 
     while (true) {
@@ -152,27 +160,27 @@ static inline void setupIPC() {
 }
 
 static inline void loadBuffer(bool ran) {
-    down(bufsemid);
-    for (int i = 0; i < *messageCount; ++i) {
-      Process *currentProcess = buffer + i;
-      if (currentProcess->id >= processTableSize) {
-        int oldSize = processTableSize;
-        while (currentProcess->id >= processTableSize) {
-          processTableSize *= 2;
-        }
-        PCB **newProcessTable = malloc(processTableSize * sizeof(PCB *));
-        memcpy(newProcessTable, processTable, oldSize * sizeof(PCB *));
-        free(processTable);
-        processTable = newProcessTable;
+  down(bufsemid);
+  for (int i = 0; i < *messageCount; ++i) {
+    Process *currentProcess = buffer + i;
+    if (currentProcess->id >= processTableSize) {
+      int oldSize = processTableSize;
+      while (currentProcess->id >= processTableSize) {
+        processTableSize *= 2;
       }
-      ProcessInfo newProcess = addProcess(currentProcess);
-      if (ran) {
-        (processTable[newProcess.id])->waitingTime += 1;
-      }
-      pushBack(arrived, &newProcess);
+      PCB **newProcessTable = malloc(processTableSize * sizeof(PCB *));
+      memcpy(newProcessTable, processTable, oldSize * sizeof(PCB *));
+      free(processTable);
+      processTable = newProcessTable;
     }
-    *messageCount = 0;
-    up(bufsemid);
+    ProcessInfo newProcess = addProcess(currentProcess);
+    if (ran) {
+      (processTable[newProcess.id])->wait += 1;
+    }
+    pushBack(arrived, &newProcess);
+  }
+  *messageCount = 0;
+  up(bufsemid);
 }
 
 ProcessInfo addProcess(Process *process) {
@@ -182,10 +190,10 @@ ProcessInfo addProcess(Process *process) {
   pcb->arrival = process->arrival;
   pcb->runtime = process->runtime;
   pcb->priority = process->priority;
-  pcb->startTime = -1;
-  pcb->remainingTime = process->runtime;
-  pcb->executionTime = 0;
-  pcb->waitingTime = 0;
+  pcb->start = -1;
+  pcb->remain = process->runtime;
+  pcb->execution = 0;
+  pcb->wait = 0;
   char runtime[8];
   sprintf(runtime, "%d", process->runtime);
   pid_t pid = fork();
@@ -206,13 +214,12 @@ ProcessInfo addProcess(Process *process) {
 void contProcess(ProcessInfo *process) {
   kill(process->pid, SIGCONT);
   PCB *pcb = processTable[process->id];
-  if (pcb->startTime < 0) {
-    pcb->startTime = tick;
+  if (pcb->start < 0) {
+    pcb->start = tick;
   }
   printf("At\ttime\t%d\tprocess\t%d\tstarted\t"
          "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
-         tick, process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
-         pcb->waitingTime);
+         tick, process->id, pcb->arrival, pcb->runtime, pcb->remain, pcb->wait);
 }
 
 void stopProcess(ProcessInfo *process) {
@@ -220,16 +227,20 @@ void stopProcess(ProcessInfo *process) {
   PCB *pcb = processTable[process->id];
   printf("At\ttime\t%d\tprocess\t%d\tstopped\t"
          "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
-         tick, process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
-         pcb->waitingTime);
+         tick, process->id, pcb->arrival, pcb->runtime, pcb->remain, pcb->wait);
 }
 
 void removeProcess(ProcessInfo *process) {
   PCB *pcb = processTable[process->id];
+  float WTA = (tick - pcb->arrival) / (float)(pcb->runtime);
+  totalCount += 1;
+  totalWTA += WTA;
+  totalWait += pcb->wait;
   printf("At\ttime\t%d\tprocess\t%d\tfinished"
-         "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
-         tick, process->id, pcb->arrival, pcb->runtime, pcb->remainingTime,
-         pcb->waitingTime);
+         "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d"
+         "TA\t%d\tWTA\t%0.2f\n",
+         tick, process->id, pcb->arrival, pcb->runtime, pcb->remain, pcb->wait,
+         tick - pcb->arrival, WTA);
   free(pcb);
 }
 
@@ -258,7 +269,7 @@ bool fcfs() {
   // then we need to remove it
   if (runningProcess != NULL) {
     pcb = processTable[runningProcess->id];
-    if (pcb->remainingTime <= 0) {
+    if (pcb->remain <= 0) {
       removeFront(deque);
       removeProcess(runningProcess);
       free(runningProcess);
@@ -285,14 +296,14 @@ bool fcfs() {
   Node *process = deque->head->next;
   while (process != NULL) {
     int id = ((ProcessInfo *)(process->data))->id;
-    processTable[id]->waitingTime += 1;
+    processTable[id]->wait += 1;
     process = process->next;
   }
 
   // update the pcb of the running process
   pcb = processTable[runningProcess->id];
-  pcb->remainingTime -= 1;
-  pcb->executionTime += 1;
+  pcb->remain -= 1;
+  pcb->execution += 1;
 
   return true;
 }
@@ -310,7 +321,7 @@ bool sjf() {
   // then we need to remove it
   if (runningProcess != NULL) {
     pcb = processTable[runningProcess->id];
-    if (pcb->remainingTime <= 0) {
+    if (pcb->remain <= 0) {
       removePQ(priorityQueue);
       removeProcess(runningProcess);
       free(runningProcess);
@@ -356,7 +367,7 @@ bool sjf() {
   PriorityNode *process = priorityQueue->head->next;
   while (process != NULL) {
     int id = ((ProcessInfo *)(process->data))->id;
-    processTable[id]->waitingTime += 1;
+    processTable[id]->wait += 1;
     process = process->next;
   }
 
@@ -365,14 +376,14 @@ bool sjf() {
   Node *arrivedProcess = arrived->head;
   while (arrivedProcess != NULL) {
     int id = ((ProcessInfo *)(arrivedProcess->data))->id;
-    processTable[id]->waitingTime += 1;
+    processTable[id]->wait += 1;
     arrivedProcess = arrivedProcess->next;
   }
 
   // update the pcb of the running process
   pcb = processTable[runningProcess->id];
-  pcb->remainingTime -= 1;
-  pcb->executionTime += 1;
+  pcb->remain -= 1;
+  pcb->execution += 1;
 
   return true;
 }
@@ -397,7 +408,7 @@ bool hpf() {
   // then we need to remove it
   if (runningProcess != NULL) {
     pcb = processTable[runningProcess->id];
-    if (pcb->remainingTime <= 0) {
+    if (pcb->remain <= 0) {
       removePQ(priorityQueue);
       removeProcess(runningProcess);
       free(runningProcess);
@@ -433,8 +444,7 @@ bool hpf() {
       free(runningProcess);
       runningProcess = processInfo;
       contProcess(runningProcess);
-    }
-    else {
+    } else {
       free(processInfo);
     }
   }
@@ -446,14 +456,14 @@ bool hpf() {
   PriorityNode *process = priorityQueue->head->next;
   while (process != NULL) {
     int id = ((ProcessInfo *)(process->data))->id;
-    processTable[id]->waitingTime += 1;
+    processTable[id]->wait += 1;
     process = process->next;
   }
 
   // update the pcb of the running process
   pcb = processTable[runningProcess->id];
-  pcb->remainingTime -= 1;
-  pcb->executionTime += 1;
+  pcb->remain -= 1;
+  pcb->execution += 1;
 
   return true;
 }
@@ -478,7 +488,7 @@ bool srtn(){
   // then we need to remove it
   if (runningProcess != NULL) {
     pcb = processTable[runningProcess->id];
-    if (pcb->remainingTime <= 0) {
+    if (pcb->remain <= 0) {
       removePQ(priorityQueue);
       removeProcess(runningProcess);
       free(runningProcess);
@@ -490,7 +500,7 @@ bool srtn(){
   // to the remaining time instead of the total runtime
   if (runningProcess != NULL) {
     pcb = processTable[runningProcess->id];
-    priorityQueue->head->priority = -1 * (pcb->remainingTime);
+    priorityQueue->head->priority = -1 * (pcb->remain);
   }
 
   // load the newly arrived processes into the priority queue
@@ -521,8 +531,7 @@ bool srtn(){
       free(runningProcess);
       runningProcess = processInfo;
       contProcess(runningProcess);
-    }
-    else {
+    } else {
       free(processInfo);
     }
   }
@@ -534,14 +543,14 @@ bool srtn(){
   PriorityNode *process = priorityQueue->head->next;
   while (process != NULL) {
     int id = ((ProcessInfo *)(process->data))->id;
-    processTable[id]->waitingTime += 1;
+    processTable[id]->wait += 1;
     process = process->next;
   }
 
   // update the pcb of the running process
   pcb = processTable[runningProcess->id];
-  pcb->remainingTime -= 1;
-  pcb->executionTime += 1;
+  pcb->remain -= 1;
+  pcb->execution += 1;
 
   return true;
 }
@@ -567,7 +576,7 @@ bool rr() {
   // then we need to remove it
   if (runningProcess != NULL) {
     pcb = processTable[runningProcess->id];
-    if (pcb->remainingTime <= 0) {
+    if (pcb->remain <= 0) {
       removeCQ(circularQueue);
       removeProcess(runningProcess);
       free(runningProcess);
@@ -611,14 +620,14 @@ bool rr() {
   Node *process = circularQueue->head->next;
   for (int i = 0; i < circularQueue->length - 1; ++i) {
     int id = ((ProcessInfo *)(process->data))->id;
-    processTable[id]->waitingTime += 1;
+    processTable[id]->wait += 1;
     process = process->next;
   }
 
   // update the pcb of the running process
   pcb = processTable[runningProcess->id];
-  pcb->remainingTime -= 1;
-  pcb->executionTime += 1;
+  pcb->remain -= 1;
+  pcb->execution += 1;
 
   return true;
 }
