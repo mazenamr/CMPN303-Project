@@ -163,16 +163,14 @@ bool peekCQ(CircularQueue *circularQueue, void **data) {
  *         it with a pointer to a copy of the old head node data.
  *
  * @param  CIRCULAR_QUEUE pointer to the circular queue.
- * @param  DATA pointer to memory location
- *         to copy the head node data to.
+ * @param  DATA pointer to memory location to copy
+ *         the new head node data to.
  */
 bool moveNext(CircularQueue *circularQueue, void **data) {
-  if (peekCQ(circularQueue, data)) {
+  if (circularQueue->head != NULL) {
     circularQueue->head = circularQueue->head->next;
-    return true;
   }
-
-  return false;
+  return peekCQ(circularQueue, data);
 }
 
 /**
@@ -184,16 +182,14 @@ bool moveNext(CircularQueue *circularQueue, void **data) {
  *         it with a pointer to a copy of the old head node data.
  *
  * @param  CIRCULAR_QUEUE pointer to the circular queue.
- * @param  DATA pointer to memory location
- *         to copy the head node data to.
+ * @param  DATA pointer to memory location to copy
+ *         the new head data to.
  */
 bool movePrev(CircularQueue *circularQueue, void **data) {
-  if (peekCQ(circularQueue, data)) {
+  if (circularQueue->head != NULL) {
     circularQueue->head = circularQueue->head->prev;
-    return true;
   }
-
-  return false;
+  return peekCQ(circularQueue, data);
 }
 
 #endif

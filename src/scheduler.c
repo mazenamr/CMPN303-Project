@@ -529,23 +529,79 @@ bool srtn(){
   return true;
 }
 
+bool rr() {
+  PCB *pcb;
+  ProcessInfo *processInfo;
+  static int q = 0;
+
+  // initialize circular queue of project info if it's not initialized
+  if (circularQueue == NULL) {
+    circularQueue = newCircularQueue(sizeof(ProcessInfo));
+  }
+
+  // if the circular queue is empty, there is nothing to do
+  if (circularQueue->head == NULL) {
+    if (arrived->head == NULL) {
+      return false;
+    }
+  }
+
   // if the running process has finished
   // then we need to remove it
   if (runningProcess != NULL) {
     pcb = processTable[runningProcess->id];
-    if (!pcb->remainingTime) {
-      // removeElement(priorityQueue, runningProcess);
-      removePQ(priorityQueue);
+    if (pcb->remainingTime <= 0) {
+      removeCQ(circularQueue);
       removeProcess(runningProcess);
       free(runningProcess);
       runningProcess = NULL;
     }
-    return true;
   }
-  return false;
-}
 
-bool rr() {
+  // load the newly arrived processes into the circular queue
+  processInfo = NULL;
+  while (popFront(arrived, (void **)&processInfo)) {
+    pcb = processTable[processInfo->id];
+    enqueueCQ(circularQueue, processInfo);
+  }
+  free(processInfo);
+
+  if (!q) {
+    if (runningProcess == NULL) {
+      peekCQ(circularQueue, (void **)&runningProcess);
+      contProcess(runningProcess);
+    } else {
+      processInfo = NULL;
+      moveNext(circularQueue, (void **)&processInfo);
+      if (processInfo->id != runningProcess->id) {
+        stopProcess(runningProcess);
+        free(runningProcess);
+        runningProcess = processInfo;
+        contProcess(runningProcess);
+      } else {
+        free(processInfo);
+      }
+    }
+  }
+
+  q = (q + 1) % QUANTA;
+
+  // the head of the circular queue should be
+  // the currently running process
+  // so we will increase the wait time
+  // of all the processes after the head
+  Node *process = circularQueue->head->next;
+  for (int i = 0; i < circularQueue->length - 1; ++i) {
+    int id = ((ProcessInfo *)(process->data))->id;
+    processTable[id]->waitingTime += 1;
+    process = process->next;
+  }
+
+  // update the pcb of the running process
+  pcb = processTable[runningProcess->id];
+  pcb->remainingTime -= 1;
+  pcb->executionTime += 1;
+
   return true;
 }
 
