@@ -1,8 +1,10 @@
 bin/
 *.out
+*.o
 .vim/
 .vscode/
 !src/.vscode/
 scheduler.perf
 scheduler.log
 memory.log
+processes.txt

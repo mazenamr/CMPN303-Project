@@ -401,7 +401,7 @@ void removeProcess(ProcessInfo *process) {
   fprintf(pFile, "Avg WTA = %0.2f\n", totalWTA / (float)totalCount);
   fprintf(pFile, "Avg Waiting = %0.2f\n", totalWait / (float)totalCount);
   fclose(pFile);
-  deallocate(pcb->starttime, pcb->id);
+  deallocate(pcb->memsize, pcb->id);
   free(pcb);
 }
 
