@@ -9,6 +9,10 @@ void resumeProcess(ProcessInfo*);
 void stopProcess(ProcessInfo*);
 void removeProcess(ProcessInfo*);
 
+void printMemory();
+bool allocate(int, int, int);
+bool deallocate(int);
+
 bool fcfs();
 bool sjf();
 bool hpf();
@@ -32,9 +36,10 @@ int *bufferaddr;
 int *messageCount;
 Process *buffer;
 
-bool memory[MEMORY_SIZE];
-
+CircularQueue *memory = NULL;
+Node *memoryHead = NULL;
 Deque *arrived = NULL;
+Deque *waiting = NULL;
 
 SCHEDULING_ALGORITHM sch;
 MEMORY_ALLOCATION_ALGORTHIM mem;
@@ -42,7 +47,6 @@ MEMORY_ALLOCATION_ALGORTHIM mem;
 Deque *deque = NULL;
 PriorityQueue *priorityQueue = NULL;
 CircularQueue *circularQueue = NULL;
-Deque *waiting = NULL;
 
 ProcessInfo *runningProcess = NULL;
 PCB **processTable = NULL;
@@ -61,13 +65,34 @@ int main(int argc, char *argv[]) {
 
   processTable = malloc(processTableSize * sizeof(PCB *));
 
-  for (int i = 0; i < MEMORY_SIZE; ++i) {
-    memory[i] = 0;
-  }
+  MemoryNode *memoryNode = malloc(sizeof(MemoryNode));
+  memoryNode->start = 0;
+  memoryNode->size = MEMORY_SIZE;
+  memoryNode->process = 0;
+
+  memory = newCircularQueue(sizeof(MemoryNode));
+  enqueueCQ(memory, (void *)memoryNode);
+  memoryHead = memory->head;
+  free(memoryNode);
+
+  arrived = newDeque(sizeof(PCB));
+  waiting = newDeque(sizeof(PCB));
 
   signal(SIGINT, clearResources);
 
   initClk();
+
+  printMemory();
+  allocate(0, 18, 1);
+  printMemory();
+  allocate(18, 122, 2);
+  printMemory();
+  deallocate(18);
+  printMemory();
+  deallocate(140);
+  printMemory();
+  deallocate(0);
+  printMemory();
 
   if (argc < 3) {
     printf("No scheduling algorithm or memory allocation algirthim are provided!\n");
@@ -90,8 +115,6 @@ int main(int argc, char *argv[]) {
     printMemoryAllocationAlgorthims();
     exit(-1);
   }
-
-  arrived = newDeque(sizeof(PCB));
 
   bool ran = false;
   printf("#At\ttime\tx\tprocess\ty\tstate\t"
@@ -190,8 +213,9 @@ static inline void loadBuffer(bool ran) {
   down(bufsemid);
   for (int i = 0; i < *messageCount; ++i) {
     Process *currentProcess = buffer + i;
-    // if we reached the limit of the size of the process table then we double
-    // it.
+    // if the new process id exceeds the size of the
+    // process table then we need to increase the size
+    // of the process table until it can fit
     if (currentProcess->id >= processTableSize) {
       int oldSize = processTableSize;
       while (currentProcess->id >= processTableSize) {
@@ -332,6 +356,91 @@ void removeProcess(ProcessInfo *process) {
   fprintf(pFile, "Avg Waiting = %0.2f\n", totalWait / (float)totalCount);
   fclose(pFile);
   free(pcb);
+}
+
+void printMemory() {
+  Node *node = memoryHead;
+  for (int i = 0; i < memory->length; ++i) {
+    MemoryNode *memoryNode = (MemoryNode *)node->data;
+    printf("%d -> %d = %d : %d\n", memoryNode->start, memoryNode->start + memoryNode->size - 1, memoryNode->size, memoryNode->process);
+    node = node->next;
+  }
+  printf("\n");
+}
+
+bool allocate(int start, int size, int process) {
+  MemoryNode *memoryNode = NULL;
+  int end = start + size - 1;
+  for (int i = 0; i < memory->length; ++i) {
+    moveNext(memory, (void **)&memoryNode);
+    if (memoryNode->start != start) {
+      continue;
+    }
+    if (memoryNode->size < size) {
+      continue;
+    }
+    removeCQ(memory);
+    MemoryNode *newNode = malloc(sizeof(MemoryNode));
+    newNode->start = start;
+    newNode->size = size;
+    newNode->process = process;
+    enqueueCQ(memory, (void *)newNode);
+    if (!start) {
+      memoryHead = memory->head->prev;
+    }
+    if (memoryNode->size > size) {
+      newNode->start = start + size;
+      newNode->size = memoryNode->size - size;
+      newNode->process = 0;
+      enqueueCQ(memory, (void *)newNode);
+    }
+    free(newNode);
+    free(memoryNode);
+    return true;
+  }
+  free(memoryNode);
+  return false;
+}
+
+bool deallocate(int start) {
+  MemoryNode *memoryNode = NULL;
+  for (int i = 0; i < memory->length; ++i) {
+    moveNext(memory, (void **)&memoryNode);
+    if (memoryNode->start != start) {
+      continue;
+    }
+    removeCQ(memory);
+    MemoryNode *newNode = malloc(sizeof(MemoryNode));
+    newNode->start = start;
+    newNode->size = memoryNode->size;
+    newNode->process = 0;
+    if (peekCQ(memory, (void **)&memoryNode)) {
+      if (memoryNode->start > newNode->start) {
+        if (!memoryNode->process) {
+          removeCQ(memory);
+          newNode->size += memoryNode->size;
+        }
+      }
+    }
+    if (movePrev(memory, (void **)&memoryNode)) {
+      if (memoryNode->start < newNode->start) {
+        if (!memoryNode->process) {
+          removeCQ(memory);
+          newNode->start = memoryNode->start;
+          newNode->size += memoryNode->size;
+        }
+      }
+    }
+    enqueueCQ(memory, (void *)newNode);
+    if (!newNode->start) {
+      memoryHead = memory->head->prev;
+    }
+    free(newNode);
+    free(memoryNode);
+    return true;
+  }
+  free(memoryNode);
+  return false;
 }
 
 bool fcfs() {
@@ -743,8 +852,14 @@ void clearResources(int signum) {
   static bool ended = false;
   if (!ended) {
     ended = true;
+    if (memory != NULL) {
+      deleteCircularQueue(memory);
+    }
     if (arrived != NULL) {
       deleteDeque(arrived);
+    }
+    if (waiting != NULL) {
+      deleteDeque(waiting);
     }
     if (deque != NULL) {
       deleteDeque(deque);

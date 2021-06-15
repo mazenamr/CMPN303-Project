@@ -54,6 +54,7 @@ int main(int argc, char *argv[]) {
 
   // initialize the clock counter
   initClk();
+  while (true);
 
   // add each process to the buffer on reaching its arrival time
   Process *currentProcess = NULL;

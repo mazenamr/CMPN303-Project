@@ -160,7 +160,7 @@ bool peekCQ(CircularQueue *circularQueue, void **data) {
  *         and copies the old head node data to the memory
  *         location provided in DATA. If NULL is given
  *         instead of a memory location then it replaces
- *         it with a pointer to a copy of the old head node data.
+ *         it with a pointer to a copy of the new head node data.
  *
  * @param  CIRCULAR_QUEUE pointer to the circular queue.
  * @param  DATA pointer to memory location to copy
@@ -179,7 +179,7 @@ bool moveNext(CircularQueue *circularQueue, void **data) {
  *         and copies the old head node data to the memory
  *         location provided in DATA. If NULL is given
  *         instead of a memory location then it replaces
- *         it with a pointer to a copy of the old head node data.
+ *         it with a pointer to a copy of the new head node data.
  *
  * @param  CIRCULAR_QUEUE pointer to the circular queue.
  * @param  DATA pointer to memory location to copy

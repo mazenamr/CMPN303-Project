@@ -75,8 +75,7 @@ typedef struct ProcessInfo {
  * @brief  Struct to represent the process control block
  *         which contains various info about a process.
  */
-typedef struct PCB
-{
+typedef struct PCB {
   int id;
   int arrival;
   int runtime;
@@ -87,7 +86,13 @@ typedef struct PCB
   int execution;
   int wait;
   PROCESS_STATE state;
-}PCB;
+} PCB;
+
+typedef struct MemoryNode {
+  int start;
+  int size;
+  int process;
+} MemoryNode;
 
 // semun used to modify semaphore settings
 typedef union semun {
