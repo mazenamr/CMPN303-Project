@@ -34,7 +34,7 @@
 #define MEMORY_SIZE 1024
 
 typedef enum SCHEDULING_ALGORITHM {
-  NONE,
+  SCH_NONE,
   FCFS,
   SJF,
   HPF,
@@ -43,6 +43,7 @@ typedef enum SCHEDULING_ALGORITHM {
 } SCHEDULING_ALGORITHM;
 
 typedef enum MEMORY_ALLOCATION_ALGORTHIM{
+  MEM_NONE,
   FIRSTFIT,
   NEXTFIT,
   BESTFIT,
@@ -192,7 +193,7 @@ void printSchedulingAlgorithms() {
   printf("\t5. Round Robin (RR)\n");
 }
 
-void printMemoryAllocationALgorthims(){
+void printMemoryAllocationAlgorthims(){
   printf("\n Memory allocation algorithms available:\n");
   printf("\t1. First Fit\n");
   printf("\t2. Next Fit\n");
@@ -201,8 +202,9 @@ void printMemoryAllocationALgorthims(){
 }
 
 void printHelp() {
-  printf("Usage: process_generator.out [input file] [scheduling algorithm] [memory allocation algorthim]\n");
+  printf("Usage: process_generator.out [input file] [scheduling algorithm] "
+         "[memory allocation algorthim]\n");
   printSchedulingAlgorithms();
-  printMemoryAllocationALgorthims();
+  printMemoryAllocationAlgorthims();
   printf("ex: process_generator.out input.txt 2 3\n");
 }

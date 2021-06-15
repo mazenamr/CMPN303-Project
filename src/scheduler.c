@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
 
   processTable = malloc(processTableSize * sizeof(PCB *));
 
-  for (int i = 0; i <= MEMORY_SIZE; ++i) {
+  for (int i = 0; i < MEMORY_SIZE; ++i) {
     memory[i] = 0;
   }
 
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
 
   if (argc < 3) {
     printf("No scheduling algorithm or memory allocation algirthim are provided!\n");
-    printMemoryAllocationALgorthims();
+    printMemoryAllocationAlgorthims();
     printSchedulingAlgorithms();
     exit(-1);
   }
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
 
   if (mem < FIRSTFIT || mem > BUDDY ) {
     printf("Invalid Memory allocation algorithm!\n");
-    printMemoryAllocationALgorthims();
+    printMemoryAllocationAlgorthims();
     exit(-1);
   }
 
@@ -219,7 +219,7 @@ static inline void loadBuffer(bool ran) {
       break;
     default:
       printf("Invalid memory allocation algorithm!\n");
-      printMemoryAllocationALgorthims();
+      printMemoryAllocationAlgorthims();
       exit(-1);
     }
     ProcessInfo newProcess;
