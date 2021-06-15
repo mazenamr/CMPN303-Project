@@ -3,7 +3,9 @@
 static inline void setupIPC();
 static inline void loadBuffer(bool);
 
-ProcessInfo addProcess(Process*);
+void addProcess(Process*);
+bool tryAllocate(int);
+ProcessInfo startProcess(int);
 void contProcess(ProcessInfo*);
 void resumeProcess(ProcessInfo*);
 void stopProcess(ProcessInfo*);
@@ -11,7 +13,7 @@ void removeProcess(ProcessInfo*);
 
 void printMemory();
 bool allocate(int, int, int);
-bool deallocate(int);
+bool deallocate(int, int);
 
 void allocateBM(int, int);
 void deallocateBM(int, int);
@@ -23,13 +25,13 @@ bool hpf();
 bool srtn();
 bool rr();
 
-int firstFit(Process*);
-int nextFit(Process*);
-int bestFit(Process*);
-int buddy(Process*);
+int firstFit(PCB*);
+int nextFit(PCB*);
+int bestFit(PCB*);
+int buddy(PCB*);
 
-int firstFitBM(Process*);
-int nextFitBM(Process*);
+int firstFitBM(PCB*);
+int nextFitBM(PCB*);
 
 void clearResources(int);
 
@@ -47,6 +49,7 @@ bool bitMap[MEMORY_SIZE];
 CircularQueue *memory = NULL;
 Node *memoryHead = NULL;
 Node *memoryLast = NULL;
+
 Deque *arrived = NULL;
 Deque *waiting = NULL;
 
@@ -86,7 +89,7 @@ int main(int argc, char *argv[]) {
   free(memoryNode);
 
   arrived = newDeque(sizeof(PCB));
-  waiting = newDeque(sizeof(PCB));
+  waiting = newDeque(sizeof(int));
 
   signal(SIGINT, clearResources);
 
@@ -114,13 +117,21 @@ int main(int argc, char *argv[]) {
     exit(-1);
   }
 
-  bool ran = false;
   printf("#At\ttime\tx\tprocess\ty\tstate\t"
          "\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n");
   FILE *pFile = fopen("scheduler.log", "w");
   fprintf(pFile, "#At\ttime\tx\tprocess\ty\tstate\t"
                  "\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n");
   fclose(pFile);
+
+  printf("#At\ttime\tx\tallocated\ty\tbytes\t"
+         "for\tprocess\tz\tfrom\ti\tto\tj\n");
+  pFile = fopen("memory.log", "w");
+  fprintf(pFile, "#At\ttime\tx\tallocated\ty\tbytes\t"
+                 "for\tprocess\tz\tfrom\ti\tto\tj\n");
+  fclose(pFile);
+
+  bool ran = false;
   while (true) {
     // ensure the process scheduler sent the new processes
     usleep(DELAY_TIME);
@@ -152,7 +163,31 @@ int main(int argc, char *argv[]) {
       if (ran) {
         utilization += 1;
       }
+
+      int *id = NULL;
+      for (int i = 0; i < waiting->length; ++i) {
+        popFront(waiting, (void **)&id);
+
+        bool allocated = tryAllocate(*id);
+
+        if (allocated) {
+          ProcessInfo newProcess = startProcess(*id);
+          pushBack(arrived, &newProcess);
+        } else {
+          pushBack(waiting, (void *)id);
+        }
+      }
+      free(id);
+
+      Node *node = waiting->head;
+      for (int i = 0; i < waiting->length; ++i) {
+        processTable[*((int *)(node->data))]->wait += 1;
+        node = node->next;
+      }
     }
+
+    int *id = NULL;
+    free(id);
 
     while (true) {
       down(bufsemid);
@@ -224,44 +259,52 @@ static inline void loadBuffer(bool ran) {
       free(processTable);
       processTable = newProcessTable;
     }
+    addProcess(currentProcess);
+    int id = currentProcess->id;
 
-    bool allocate = false;
+    bool allocated = tryAllocate(id);
+
+    if (ran && allocated) {
+      processTable[id]->wait += 1;
+    }
+
+    if (allocated) {
+      ProcessInfo newProcess = startProcess(id);
+      pushBack(arrived, &newProcess);
+    } else {
+      pushBack(waiting, &id);
+    }
+  }
+  up(bufsemid);
+  *messageCount = 0;
+}
+
+bool tryAllocate(int id) {
+    PCB *pcb = processTable[id];
+    int allocated = -1;
     switch (mem) {
     case FIRSTFIT:
-      allocate = firstFit(currentProcess);
+      allocated = firstFit(pcb);
       break;
     case NEXTFIT:
-      allocate = nextFit(currentProcess);
+      allocated = nextFit(pcb);
       break;
     case BESTFIT:
-      allocate = bestFit(currentProcess);
+      allocated = bestFit(pcb);
       break;
     case BUDDY:
-      allocate = buddy(currentProcess);
+      allocated = buddy(pcb);
       break;
     default:
       printf("Invalid memory allocation algorithm!\n");
       printMemoryAllocationAlgorthims();
       exit(-1);
     }
-    ProcessInfo newProcess;
-    if (allocate || true) // true to be removed later, just to test sch algo
-    {
-      newProcess = addProcess(currentProcess);
-    } else {
-      // add waiting
-    }
-    if (ran) {
-      (processTable[newProcess.id])->wait += 1;
-    }
-    pushBack(arrived, &newProcess);
-  }
-  *messageCount = 0;
-  up(bufsemid);
+    pcb->memstart = allocated;
+    return (allocated != -1);
 }
 
-
-ProcessInfo addProcess(Process *process) {
+void addProcess(Process *process) {
   processTable[process->id] = malloc(sizeof(PCB));
   PCB *pcb = processTable[process->id];
   pcb->id = process->id;
@@ -270,15 +313,20 @@ ProcessInfo addProcess(Process *process) {
   pcb->priority = process->priority;
   pcb->starttime = -1;
   pcb->remain = process->runtime;
-  pcb->memsize = process->memsize;
   pcb->execution = 0;
   pcb->wait = 0;
   pcb->state = WAITING;
+  pcb->memsize = process->memsize;
+  pcb->memstart = -1;
+}
+
+ProcessInfo startProcess(int id) {
+  PCB *pcb = processTable[id];
   char runtime[8];
-  sprintf(runtime, "%d", process->runtime);
+  sprintf(runtime, "%d", pcb->runtime);
   pid_t pid = fork();
   if (!pid) {
-    execl("bin/process.out", "process.out", runtime, NULL);
+    execl("process.out", "process.out", runtime, NULL);
   }
   // we need to make sure the process has
   // properly started before we stop it
@@ -286,7 +334,7 @@ ProcessInfo addProcess(Process *process) {
   kill(pid, SIGSTOP);
   up(procsemid);
   ProcessInfo newProcess;
-  newProcess.id = process->id;
+  newProcess.id = pcb->id;
   newProcess.pid = pid;
   return newProcess;
 }
@@ -353,6 +401,7 @@ void removeProcess(ProcessInfo *process) {
   fprintf(pFile, "Avg WTA = %0.2f\n", totalWTA / (float)totalCount);
   fprintf(pFile, "Avg Waiting = %0.2f\n", totalWait / (float)totalCount);
   fclose(pFile);
+  deallocate(pcb->starttime, pcb->id);
   free(pcb);
 }
 
@@ -360,7 +409,9 @@ void printMemory() {
   Node *node = memoryHead;
   for (int i = 0; i < memory->length; ++i) {
     MemoryNode *memoryNode = (MemoryNode *)node->data;
-    printf("%d -> %d = %d : %d\n", memoryNode->start, memoryNode->start + memoryNode->size - 1, memoryNode->size, memoryNode->process);
+    printf("%d -> %d = %d : %d\n", memoryNode->start,
+           memoryNode->start + memoryNode->size - 1, memoryNode->size,
+           memoryNode->process);
     node = node->next;
   }
   printf("\n");
@@ -383,9 +434,21 @@ bool allocate(int start, int size, int process) {
     newNode->size = size;
     newNode->process = process;
     enqueueCQ(memory, (void *)newNode);
+    memoryLast = memory->head->prev;
     if (!start) {
       memoryHead = memory->head->prev;
     }
+
+    printf("#At\ttime\t%d\tallocated\t%d\tbytes\t"
+          "for\tprocess\t%d\tfrom\t%d\tto\t%d\n",
+          tick, size, process, start, start + size - 1);
+    FILE *pFile = fopen("memory.log", "a");
+    fprintf(pFile,
+          "#At\ttime\t%d\tallocated\t%d\tbytes\t"
+          "for\tprocess\t%d\tfrom\t%d\tto\t%d\n",
+          tick, size, process, start, start + size - 1);
+    fclose(pFile);
+
     if (memoryNode->size > size) {
       newNode->start = start + size;
       newNode->size = memoryNode->size - size;
@@ -400,7 +463,7 @@ bool allocate(int start, int size, int process) {
   return false;
 }
 
-bool deallocate(int start) {
+bool deallocate(int start, int process) {
   MemoryNode *memoryNode = NULL;
   for (int i = 0; i < memory->length; ++i) {
     moveNext(memory, (void **)&memoryNode);
@@ -412,6 +475,15 @@ bool deallocate(int start) {
     newNode->start = start;
     newNode->size = memoryNode->size;
     newNode->process = 0;
+    printf("#At\ttime\t%d\tfreed\t%d\tbytes\t"
+          "for\tprocess\t%d\tfrom\t%d\tto\t%d\n",
+          tick, newNode->size, process, start, start + newNode->size - 1);
+    FILE *pFile = fopen("memory.log", "a");
+    fprintf(pFile,
+          "#At\ttime\t%d\tfreed\t%d\tbytes\t"
+          "for\tprocess\t%d\tfrom\t%d\tto\t%d\n",
+          tick, newNode->size, process, start, start + newNode->size - 1);
+    fclose(pFile);
     if (peekCQ(memory, (void **)&memoryNode)) {
       if (memoryNode->start > newNode->start) {
         if (!memoryNode->process) {
@@ -825,7 +897,7 @@ bool rr() {
   return true;
 }
 
-int firstFitBM(Process* process){
+int firstFitBM(PCB* process){
   for (int i = 0; i < MEMORY_SIZE; i++) {
     if (checkAllocateBM(i, process->memsize) != -1) {
       allocateBM(i, process->memsize);
@@ -837,7 +909,7 @@ int firstFitBM(Process* process){
 }
 
 
-int nextFitBM(Process* process){
+int nextFitBM(PCB* process){
   for (int i = lastAllocated; i < MEMORY_SIZE; i++) {
     if (checkAllocateBM(i, process->memsize)) {
       processTable[process->memsize]->memstart = i;
@@ -870,12 +942,12 @@ void deallocateBM(int start, int size) {
   }
 }
 
-int firstFit(Process* process) {
+int firstFit(PCB* process) {
   Node *node = memoryHead;
   for (int i = 0; i < memory->length; ++i) {
     MemoryNode *memoryNode = (MemoryNode *)node->data;
     if (memoryNode->size >= process->memsize && memoryNode->process == 0) {
-      if(allocate(memoryNode->start, memoryNode->size, process->id)) {
+      if(allocate(memoryNode->start, process->memsize, process->id)) {
         return memoryNode->start;
       }
     }
@@ -885,11 +957,11 @@ int firstFit(Process* process) {
   return -1;
 }
 
-int nextFit(Process* process) {
+int nextFit(PCB* process) {
   MemoryNode *memoryNode = (MemoryNode *)memoryLast->data;
 
   if (memoryNode->size >= process->memsize && memoryNode->process == 0) {
-    if (allocate(memoryNode->start, memoryNode->size, process->id)) {
+    if (allocate(memoryNode->start, process->memsize, process->id)) {
       return memoryNode->start;
     }
   }
@@ -897,7 +969,7 @@ int nextFit(Process* process) {
   return -1;
 }
 
-int bestFit(Process* process){
+int bestFit(PCB* process){
   int minNeededSize = process->memsize;
   int currentMinSize = MEMORY_SIZE+1;
 
@@ -922,8 +994,8 @@ int bestFit(Process* process){
 }
 
 
-int buddy(Process* process){
-  return -1;
+int buddy(PCB* process){
+  return 1;
 }
 
 int ceilPowerOfTwo(int num) {

@@ -43,18 +43,17 @@ int main(int argc, char *argv[]) {
   // start the clock process
   pid = fork();
   if (!pid) {
-    execl("bin/clk.out", "clk.out", NULL);
+    execl("clk.out", "clk.out", NULL);
   }
 
   // start the scheduler process
   pid = fork();
   if (!pid) {
-    execl("bin/scheduler.out", "scheduler.out", argv[2], argv[3], NULL);
+    execl("scheduler.out", "scheduler.out", argv[2], argv[3], NULL);
   }
 
   // initialize the clock counter
   initClk();
-  while (true);
 
   // add each process to the buffer on reaching its arrival time
   Process *currentProcess = NULL;
