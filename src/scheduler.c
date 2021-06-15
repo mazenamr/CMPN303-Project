@@ -116,6 +116,7 @@ int main(int argc, char *argv[]) {
         up(bufsemid);
         break;
       }
+      usleep(DELAY_TIME);
       up(bufsemid);
       if (tick != getClk()) {
         ran = false;
