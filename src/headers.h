@@ -63,7 +63,7 @@ typedef struct Process {
   int arrival;
   int runtime;
   int priority;
-  int mem;
+  int memsize;
 } Process;
 
 typedef struct ProcessInfo {
@@ -80,11 +80,12 @@ typedef struct PCB {
   int arrival;
   int runtime;
   int priority;
-  int mem;
-  int start;
+  int starttime;
   int remain;
   int execution;
   int wait;
+  int memsize;
+  int memstart;
   PROCESS_STATE state;
 } PCB;
 
