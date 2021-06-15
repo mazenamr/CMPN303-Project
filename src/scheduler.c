@@ -203,7 +203,7 @@ ProcessInfo addProcess(Process *process) {
   sprintf(runtime, "%d", process->runtime);
   pid_t pid = fork();
   if (!pid) {
-    execl("bin/process.out", "process.out", runtime, NULL);
+    execl("process.out", "process.out", runtime, NULL);
   }
   // we need to make sure the process has
   // properly started before we stop it
