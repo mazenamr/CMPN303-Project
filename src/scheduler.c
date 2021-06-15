@@ -403,6 +403,13 @@ bool sjf() {
     priorityQueue = newPriorityQueue(sizeof(ProcessInfo));
   }
 
+  // if the priority queue is empty, there is nothing to do
+  if (priorityQueue->head == NULL) {
+    if (arrived->head == NULL) {
+      return false;
+    }
+  }
+
   // if the running process has finished
   // then we need to remove it
   if (runningProcess != NULL) {
@@ -415,24 +422,13 @@ bool sjf() {
     }
   }
 
-  // here we only load the newly arrived processes when the
-  // priority queue is empty because we need to make sure
-  // that the head of the priority queue doesn't change
-  // so that we can easily dequeue it
-  if (priorityQueue->head == NULL) {
-    // if the priority queue is empty and no new processes
-    // have arrived, there is nothing to do
-    if (arrived->head == NULL) {
-      return false;
-    }
-    // load the newly arrived processes into the priority queue
-    processInfo = NULL;
-    while (popFront(arrived, (void **)&processInfo)) {
-      pcb = processTable[processInfo->id];
-      enqueuePQ(priorityQueue, processInfo, -1 * (pcb->runtime));
-    }
-    free(processInfo);
+  // load the newly arrived processes into the priority queue
+  processInfo = NULL;
+  while (popFront(arrived, (void **)&processInfo)) {
+    pcb = processTable[processInfo->id];
+    enqueuePQ(priorityQueue, processInfo, -1 * (pcb->runtime), true);
   }
+  free(processInfo);
 
   // if we don't have a running process then we
   // should start the next process in the priority queue
@@ -506,7 +502,7 @@ bool hpf() {
   processInfo = NULL;
   while (popFront(arrived, (void **)&processInfo)) {
     pcb = processTable[processInfo->id];
-    enqueuePQ(priorityQueue, processInfo, -1 * (pcb->priority));
+    enqueuePQ(priorityQueue, processInfo, -1 * (pcb->priority), false);
   }
   free(processInfo);
 
@@ -593,7 +589,7 @@ bool srtn(){
   processInfo = NULL;
   while (popFront(arrived, (void **)&processInfo)) {
     pcb = processTable[processInfo->id];
-    enqueuePQ(priorityQueue, processInfo, -1 * (pcb->runtime));
+    enqueuePQ(priorityQueue, processInfo, -1 * (pcb->runtime), false);
   }
   free(processInfo);
 

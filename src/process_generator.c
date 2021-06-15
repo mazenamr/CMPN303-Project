@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
   }
 
   // make sure everything ended properly
-  sleep(3);
+  sleep(5);
 
   clearResources(-1);
 }
