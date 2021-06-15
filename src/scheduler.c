@@ -244,7 +244,6 @@ static inline void loadBuffer(bool ran) {
     }
     addProcess(currentProcess);
     int id = currentProcess->id;
-    up(bufsemid);
 
     bool allocated = tryAllocate(id);
 
@@ -259,6 +258,7 @@ static inline void loadBuffer(bool ran) {
       pushBack(waiting, &id);
     }
   }
+  up(bufsemid);
   *messageCount = 0;
 }
 
