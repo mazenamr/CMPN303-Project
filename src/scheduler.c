@@ -13,7 +13,7 @@ void removeProcess(ProcessInfo*);
 
 void printMemory();
 bool allocate(int, int, int);
-bool deallocate(int);
+bool deallocate(int, int);
 
 void allocateBM(int, int);
 void deallocateBM(int, int);
@@ -117,13 +117,21 @@ int main(int argc, char *argv[]) {
     exit(-1);
   }
 
-  bool ran = false;
   printf("#At\ttime\tx\tprocess\ty\tstate\t"
          "\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n");
   FILE *pFile = fopen("scheduler.log", "w");
   fprintf(pFile, "#At\ttime\tx\tprocess\ty\tstate\t"
                  "\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n");
   fclose(pFile);
+
+  printf("#At\ttime\tx\tallocated\ty\tbytes\t"
+         "for\tprocess\tz\tfrom\ti\tto\tj\n");
+  pFile = fopen("memory.log", "w");
+  fprintf(pFile, "#At\ttime\tx\tallocated\ty\tbytes\t"
+                 "for\tprocess\tz\tfrom\ti\tto\tj\n");
+  fclose(pFile);
+
+  bool ran = false;
   while (true) {
     // ensure the process scheduler sent the new processes
     usleep(DELAY_TIME);
@@ -393,7 +401,7 @@ void removeProcess(ProcessInfo *process) {
   fprintf(pFile, "Avg WTA = %0.2f\n", totalWTA / (float)totalCount);
   fprintf(pFile, "Avg Waiting = %0.2f\n", totalWait / (float)totalCount);
   fclose(pFile);
-  deallocate(pcb->starttime);
+  deallocate(pcb->starttime, pcb->id);
   free(pcb);
 }
 
@@ -430,6 +438,17 @@ bool allocate(int start, int size, int process) {
     if (!start) {
       memoryHead = memory->head->prev;
     }
+
+    printf("#At\ttime\t%d\tallocated\t%d\tbytes\t"
+          "for\tprocess\t%d\tfrom\t%d\tto\t%d\n",
+          tick, size, process, start, start + size - 1);
+    FILE *pFile = fopen("memory.log", "a");
+    fprintf(pFile,
+          "#At\ttime\t%d\tallocated\t%d\tbytes\t"
+          "for\tprocess\t%d\tfrom\t%d\tto\t%d\n",
+          tick, size, process, start, start + size - 1);
+    fclose(pFile);
+
     if (memoryNode->size > size) {
       newNode->start = start + size;
       newNode->size = memoryNode->size - size;
@@ -444,7 +463,7 @@ bool allocate(int start, int size, int process) {
   return false;
 }
 
-bool deallocate(int start) {
+bool deallocate(int start, int process) {
   MemoryNode *memoryNode = NULL;
   for (int i = 0; i < memory->length; ++i) {
     moveNext(memory, (void **)&memoryNode);
@@ -456,6 +475,15 @@ bool deallocate(int start) {
     newNode->start = start;
     newNode->size = memoryNode->size;
     newNode->process = 0;
+    printf("#At\ttime\t%d\tfreed\t%d\tbytes\t"
+          "for\tprocess\t%d\tfrom\t%d\tto\t%d\n",
+          tick, newNode->size, process, start, start + newNode->size - 1);
+    FILE *pFile = fopen("memory.log", "a");
+    fprintf(pFile,
+          "#At\ttime\t%d\tfreed\t%d\tbytes\t"
+          "for\tprocess\t%d\tfrom\t%d\tto\t%d\n",
+          tick, newNode->size, process, start, start + newNode->size - 1);
+    fclose(pFile);
     if (peekCQ(memory, (void **)&memoryNode)) {
       if (memoryNode->start > newNode->start) {
         if (!memoryNode->process) {
