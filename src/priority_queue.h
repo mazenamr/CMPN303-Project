@@ -62,8 +62,9 @@ void deletePriorityQueue(PriorityQueue *priorityQueue) {
  * @param  PRIORITY_QUEUE pointer to the priority queue.
  * @param  DATA pointer to the data to be inserted.
  * @param  PRIORITY integer value representing the priority of the inserted node.
+ * @param  KEEP_HEAD if set to true, then we don't change the head of the priority queue.
  */
-void enqueuePQ(PriorityQueue *priorityQueue, void *data, int priority) {
+void enqueuePQ(PriorityQueue *priorityQueue, void *data, int priority, bool keepHead) {
   PriorityNode *start = priorityQueue->head;
   PriorityNode *node = (PriorityNode *)malloc(sizeof(PriorityNode));
   node->data = malloc(priorityQueue->size);
@@ -78,7 +79,7 @@ void enqueuePQ(PriorityQueue *priorityQueue, void *data, int priority) {
     return;
   }
 
-  if (start->priority < priority) {
+  if (start->priority < priority && !keepHead) {
     node->next = start;
     priorityQueue->head = node;
     return;
