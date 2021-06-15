@@ -15,6 +15,10 @@ void printMemory();
 bool allocate(int, int, int);
 bool deallocate(int);
 
+void allocateBM(int, int);
+void deallocateBM(int, int);
+bool checkAllocateBM(int, int);
+
 bool fcfs();
 bool sjf();
 bool hpf();
@@ -25,6 +29,9 @@ int firstFit(PCB*);
 int nextFit(PCB*);
 int bestFit(PCB*);
 int buddy(PCB*);
+
+int firstFitBM(PCB*);
+int nextFitBM(PCB*);
 
 void clearResources(int);
 
@@ -38,6 +45,7 @@ int *bufferaddr;
 int *messageCount;
 Process *buffer;
 
+bool bitMap[1024];
 CircularQueue *memory = NULL;
 Node *memoryHead = NULL;
 Node *memoryLast = NULL;
@@ -60,6 +68,7 @@ int totalCount = 0;
 float totalWTA = 0;
 int totalWait = 0;
 int utilization = 0;
+int lastAllocated = 0;
 
 int main(int argc, char *argv[]) {
   setupIPC();
@@ -860,23 +869,115 @@ bool rr() {
   return true;
 }
 
-int firstFit(PCB* process){
-  return 1;
+int firstFitBM(PCB* process){
+  for (int i = 0; i < MEMORY_SIZE; i++) {
+    if (checkAllocateBM(i, process->memsize) != -1) {
+      allocateBM(i, process->memsize);
+      processTable[process->id]->memstart = i;
+      return i;
+    }
+  }
+  return -1;
 }
 
 
-int nextFit(PCB* process){
-  return 1;
+int nextFitBM(PCB* process){
+  for (int i = lastAllocated; i < MEMORY_SIZE; i++) {
+    if (checkAllocateBM(i, process->memsize)) {
+      processTable[process->memsize]->memstart = i;
+      allocateBM(i, process->memsize);
+      lastAllocated = i + process->memsize;
+      return i;
+    }
+  }
+  return -1;
 }
 
+bool checkAllocateBM(int start, int size) {
+  for (int i = 0; i < size; i++) {
+    if (bitMap[(start + i) % MEMORY_SIZE]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void allocateBM(int start, int size) {
+  for (int i = 0; i < size; i++) {
+    bitMap[(start + i) % MEMORY_SIZE] = true;
+  }
+}
+
+void deallocateBM(int start, int size) {
+  for (int i = 0; i < size; i++) {
+    bitMap[(start + i) % MEMORY_SIZE] = false;
+  }
+}
+
+int firstFit(PCB* process) {
+  Node *node = memoryHead;
+  for (int i = 0; i < memory->length; ++i) {
+    MemoryNode *memoryNode = (MemoryNode *)node->data;
+    if (memoryNode->size >= process->memsize && memoryNode->process == 0) {
+      if(allocate(memoryNode->start, memoryNode->size, process->id)) {
+        return memoryNode->start;
+      }
+    }
+    node = node->next;
+  }
+  // add to wait queue here
+  return -1;
+}
+
+int nextFit(PCB* process) {
+  MemoryNode *memoryNode = (MemoryNode *)memoryLast->data;
+
+  if (memoryNode->size >= process->memsize && memoryNode->process == 0) {
+    if (allocate(memoryNode->start, memoryNode->size, process->id)) {
+      return memoryNode->start;
+    }
+  }
+  // add to wait queue here
+  return -1;
+}
 
 int bestFit(PCB* process){
-  return 1;
+  int minNeededSize = process->memsize;
+  int currentMinSize = MEMORY_SIZE+1;
+
+  Node *node = memoryHead;
+  MemoryNode* fitNode;
+  bool allocated = false;
+  for (int i = 0; i < memory->length; ++i) {
+    MemoryNode *memoryNode = (MemoryNode *)node->data;
+    if (memoryNode->size >= process->memsize && memoryNode->process == 0) {
+      if (currentMinSize >= memoryNode->size){
+        currentMinSize = memoryNode->size;
+        fitNode = memoryNode;
+      }
+    }
+    node = node->next;
+  }
+  if (allocate(fitNode->start, process->memsize, process->id) ) {
+    return fitNode->start;
+  }
+
+  return -1;
 }
 
 
 int buddy(PCB* process){
   return 1;
+}
+
+int ceilPowerOfTwo(int num) {
+  num--;
+  num |= num >> 1;
+  num |= num >> 2;
+  num |= num >> 4;
+  num |= num >> 8;
+  num |= num >> 16;
+  return ++num;
 }
 
 void clearResources(int signum) {
