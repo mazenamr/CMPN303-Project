@@ -953,19 +953,20 @@ int firstFit(PCB* process) {
     }
     node = node->next;
   }
-  // add to wait queue here
   return -1;
 }
 
 int nextFit(PCB* process) {
-  MemoryNode *memoryNode = (MemoryNode *)memoryLast->data;
-
-  if (memoryNode->size >= process->memsize && memoryNode->process == 0) {
-    if (allocate(memoryNode->start, process->memsize, process->id)) {
-      return memoryNode->start;
+  Node *node = memoryLast;
+  for (int i = 0; i < memory->length; ++i) {
+    MemoryNode *memoryNode = (MemoryNode *)node->data;
+    if (memoryNode->size >= process->memsize && memoryNode->process == 0) {
+      if(allocate(memoryNode->start, process->memsize, process->id)) {
+        return memoryNode->start;
+      }
     }
+    node = node->next;
   }
-  // add to wait queue here
   return -1;
 }
 
