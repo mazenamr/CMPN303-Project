@@ -45,7 +45,7 @@ int *bufferaddr;
 int *messageCount;
 Process *buffer;
 
-bool bitMap[1024];
+bool bitMap[MEMORY_SIZE];
 CircularQueue *memory = NULL;
 Node *memoryHead = NULL;
 Node *memoryLast = NULL;
@@ -947,7 +947,7 @@ int firstFit(PCB* process) {
   for (int i = 0; i < memory->length; ++i) {
     MemoryNode *memoryNode = (MemoryNode *)node->data;
     if (memoryNode->size >= process->memsize && memoryNode->process == 0) {
-      if(allocate(memoryNode->start, memoryNode->size, process->id)) {
+      if(allocate(memoryNode->start, process->memsize, process->id)) {
         return memoryNode->start;
       }
     }
@@ -961,7 +961,7 @@ int nextFit(PCB* process) {
   MemoryNode *memoryNode = (MemoryNode *)memoryLast->data;
 
   if (memoryNode->size >= process->memsize && memoryNode->process == 0) {
-    if (allocate(memoryNode->start, memoryNode->size, process->id)) {
+    if (allocate(memoryNode->start, process->memsize, process->id)) {
       return memoryNode->start;
     }
   }
