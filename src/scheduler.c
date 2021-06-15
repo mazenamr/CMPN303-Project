@@ -43,7 +43,7 @@ int *bufferaddr;
 int *messageCount;
 Process *buffer;
 
-bool bitMap[1024];
+bool bitMap[MEMORY_SIZE];
 CircularQueue *memory = NULL;
 Node *memoryHead = NULL;
 Node *memoryLast = NULL;
