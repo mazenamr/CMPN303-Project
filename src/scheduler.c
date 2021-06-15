@@ -13,16 +13,23 @@ void printMemory();
 bool allocate(int, int, int);
 bool deallocate(int);
 
+void allocateBM(int, int);
+void deallocateBM(int, int);
+bool checkAllocateBM(int, int);
+
 bool fcfs();
 bool sjf();
 bool hpf();
 bool srtn();
 bool rr();
 
-bool firstFit(Process*);
-bool nextFit(Process*);
-bool bestFit(Process*);
-bool buddy(Process*);
+int firstFit(Process*);
+int nextFit(Process*);
+int bestFit(Process*);
+int buddy(Process*);
+
+int firstFitBM(Process*);
+int nextFitBM(Process*);
 
 void clearResources(int);
 
@@ -36,8 +43,10 @@ int *bufferaddr;
 int *messageCount;
 Process *buffer;
 
+bool bitMap[1024];
 CircularQueue *memory = NULL;
 Node *memoryHead = NULL;
+Node *memoryLast = NULL;
 Deque *arrived = NULL;
 Deque *waiting = NULL;
 
@@ -56,6 +65,7 @@ int totalCount = 0;
 float totalWTA = 0;
 int totalWait = 0;
 int utilization = 0;
+int lastAllocated = 0;
 
 int main(int argc, char *argv[]) {
   setupIPC();
@@ -81,18 +91,6 @@ int main(int argc, char *argv[]) {
   signal(SIGINT, clearResources);
 
   initClk();
-
-  printMemory();
-  allocate(0, 18, 1);
-  printMemory();
-  allocate(18, 122, 2);
-  printMemory();
-  deallocate(18);
-  printMemory();
-  deallocate(140);
-  printMemory();
-  deallocate(0);
-  printMemory();
 
   if (argc < 3) {
     printf("No scheduling algorithm or memory allocation algirthim are provided!\n");
@@ -270,9 +268,9 @@ ProcessInfo addProcess(Process *process) {
   pcb->arrival = process->arrival;
   pcb->runtime = process->runtime;
   pcb->priority = process->priority;
-  pcb->start = -1;
+  pcb->starttime = -1;
   pcb->remain = process->runtime;
-  pcb->mem = process->mem;
+  pcb->memsize = process->memsize;
   pcb->execution = 0;
   pcb->wait = 0;
   pcb->state = WAITING;
@@ -298,8 +296,8 @@ void contProcess(ProcessInfo *process) {
   PCB *pcb = processTable[process->id];
   pcb->state = RUNNING;
   char *started = "resumed";
-  if (pcb->start < 0) {
-    pcb->start = tick;
+  if (pcb->starttime < 0) {
+    pcb->starttime = tick;
     started = "started";
   }
   printf("At\ttime\t%d\tprocess\t%d\t%s\t"
@@ -827,23 +825,115 @@ bool rr() {
   return true;
 }
 
-bool firstFit(Process* process){
-  return false;
+int firstFitBM(Process* process){
+  for (int i = 0; i < MEMORY_SIZE; i++) {
+    if (checkAllocate(i, process->memsize)) {
+      allocateBM(i, process->memsize);
+      processTable[process->id]->memstart = i;
+      return i;
+    }
+  }
+  return -1;
 }
 
 
-bool nextFit(Process* process){
-  return false;
+int nextFitBM(Process* process){
+  for (int i = lastAllocated; i < MEMORY_SIZE; i++) {
+    if (checkAllocateBM(i, process->memsize)) {
+      processTable[process->memsize]->memstart = i;
+      allocateBM(i, process->memsize);
+      lastAllocated = i + process->memsize;
+      return i;
+    }
+  }
+  return -1;
+}
+
+bool checkAllocateBM(int start, int size) {
+  for (int i = 0; i < size; i++) {
+    if (bitMap[(start + i) % MEMORY_SIZE]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void allocateBM(int start, int size) {
+  for (int i = 0; i < size; i++) {
+    bitMap[(start + i) % MEMORY_SIZE] = true;
+  }
+}
+
+void deallocateBM(int start, int size) {
+  for (int i = 0; i < size; i++) {
+    bitMap[(start + i) % MEMORY_SIZE] = false;
+  }
+}
+
+int firstFit(Process* process) {
+  Node *node = memoryHead;
+  for (int i = 0; i < memory->length; ++i) {
+    MemoryNode *memoryNode = (MemoryNode *)node->data;
+    if (memoryNode->size >= process->memsize && memoryNode->process == 0) {
+      if(allocate(memoryNode->start, memoryNode->size, process->id)) {
+        return memoryNode->start;
+      }
+    }
+    node = node->next;
+  }
+  // add to wait queue here
+  return -1;
+}
+
+int nextFit(Process* process) {
+  MemoryNode *memoryNode = (MemoryNode *)memoryLast->data;
+
+  if (memoryNode->size >= process->memsize && memoryNode->process == 0) {
+    if (allocate(memoryNode->start, memoryNode->size, process->id)) {
+      return memoryNode->start;
+    }
+  }
+  // add to wait queue here
+  return -1;
+}
+
+int bestFit(Process* process){
+  int minNeededSize = process->memsize;
+  int currentMinSize = MEMORY_SIZE+1;
+
+  Node *node = memoryHead;
+  MemoryNode* fitNode;
+  bool allocated = false;
+  for (int i = 0; i < memory->length; ++i) {
+    MemoryNode *memoryNode = (MemoryNode *)node->data;
+    if (memoryNode->size >= process->memsize && memoryNode->process == 0) {
+      if (currentMinSize >= memoryNode->size){
+        currentMinSize = memoryNode->size;
+        fitNode = memoryNode;
+      }
+    }
+    node = node->next;
+  }
+  if (allocate(fitNode->start, process->memsize, process->id) ) {
+    return fitNode->start;
+  }
+
+  return -1;
 }
 
 
-bool bestFit(Process* process){
-  return false;
+int buddy(Process* process){
+  return -1;
 }
 
-
-bool buddy(Process* process){
-  return false;
+int ceilPowerOfTwo(int num) {
+  num--;
+  num |= num >> 1;
+  num |= num >> 2;
+  num |= num >> 4;
+  num |= num >> 8;
+  num |= num >> 16;
+  return ++num;
 }
 
 void clearResources(int signum) {
