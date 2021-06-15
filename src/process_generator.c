@@ -143,7 +143,7 @@ static inline void getInput(char *file) {
     Process process;
     if (line[0] != '#') {
       if (sscanf(line, "%d\t%d\t%d\t%d\t%d", &(process.id), &(process.arrival),
-                 &(process.runtime), &(process.priority), &(process.mem)) < 5) {
+                 &(process.runtime), &(process.priority), &(process.memsize)) < 5) {
         printf("Error in input file line %d!\n", lineNumber);
         exit(-1);
       }

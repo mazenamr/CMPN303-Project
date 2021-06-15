@@ -827,7 +827,7 @@ bool rr() {
 
 int firstFitBM(Process* process){
   for (int i = 0; i < MEMORY_SIZE; i++) {
-    if (checkAllocate(i, process->memsize)) {
+    if (checkAllocateBM(i, process->memsize) != -1) {
       allocateBM(i, process->memsize);
       processTable[process->id]->memstart = i;
       return i;
