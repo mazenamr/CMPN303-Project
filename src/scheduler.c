@@ -971,24 +971,23 @@ int nextFit(PCB* process) {
 }
 
 int bestFit(PCB* process){
-  int minNeededSize = process->memsize;
-  int currentMinSize = MEMORY_SIZE+1;
+  int minsize = MEMORY_SIZE+1;
+  int start = -1;
 
-  Node *node = memoryHead;
-  MemoryNode* fitNode;
-  bool allocated = false;
+  MemoryNode *memoryNode = NULL;
   for (int i = 0; i < memory->length; ++i) {
-    MemoryNode *memoryNode = (MemoryNode *)node->data;
-    if (memoryNode->size >= process->memsize && memoryNode->process == 0) {
-      if (currentMinSize >= memoryNode->size){
-        currentMinSize = memoryNode->size;
-        fitNode = memoryNode;
+    peekCQ(memory, (void **)&memoryNode);
+    if (memoryNode->size >= process->memsize && !memoryNode->process) {
+      if (minsize >= memoryNode->size) {
+        minsize = memoryNode->size;
+        start = memoryNode->start;
       }
     }
-    node = node->next;
   }
-  if (allocate(fitNode->start, process->memsize, process->id) ) {
-    return fitNode->start;
+  free(memoryNode);
+
+  if (allocate(start, process->memsize, process->id) ) {
+    return start;
   }
 
   return -1;
