@@ -197,6 +197,7 @@ ProcessInfo addProcess(Process *process) {
   pcb->remain = process->runtime;
   pcb->execution = 0;
   pcb->wait = 0;
+  pcb->state = WAITING;
   char runtime[8];
   sprintf(runtime, "%d", process->runtime);
   pid_t pid = fork();
@@ -217,6 +218,7 @@ ProcessInfo addProcess(Process *process) {
 void contProcess(ProcessInfo *process) {
   kill(process->pid, SIGCONT);
   PCB *pcb = processTable[process->id];
+  pcb->state = RUNNING;
   char *started = "resumed";
   if (pcb->start < 0) {
     pcb->start = tick;
@@ -238,6 +240,7 @@ void contProcess(ProcessInfo *process) {
 void stopProcess(ProcessInfo *process) {
   kill(process->pid, SIGSTOP);
   PCB *pcb = processTable[process->id];
+  pcb->state = WAITING;
   printf("At\ttime\t%d\tprocess\t%d\tstopped\t"
          "\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
          tick, process->id, pcb->arrival, pcb->runtime, pcb->remain, pcb->wait);
