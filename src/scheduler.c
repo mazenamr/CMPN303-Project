@@ -15,6 +15,13 @@ bool hpf();
 bool srtn();
 bool rr();
 
+bool firstFit(Process*);
+bool nextFit(Process*);
+bool bestFit(Process*);
+bool buddy(Process*); 
+bool memory[1024]= {0};                     //which means that all memory is free
+
+
 void clearResources(int);
 
 int tick;
@@ -29,9 +36,13 @@ Process *buffer;
 
 Deque *arrived = NULL;
 
+MEMORY_ALLOCATION_ALGORTHIM memAlgo; 
+bool allocate;                       //to indicate whehter the memory allocation alogrthim was able to allocate memory for the given process
+
 Deque *deque = NULL;
 PriorityQueue *priorityQueue = NULL;
 CircularQueue *circularQueue = NULL;
+Deque *waiting = NULL;
 
 ProcessInfo *runningProcess = NULL;
 PCB **processTable = NULL;
@@ -54,17 +65,26 @@ int main(int argc, char *argv[]) {
 
   initClk();
 
-  if (argc < 2) {
-    printf("No scheduling algorithm provided!\n");
+  if (argc < 3) {
+    printf("No scheduling algorithm or memory allocation algirthim are provided!\n");
+    printMemoryAllocationALgorthims();
     printSchedulingAlgorithms();
     exit(-1);
   }
 
   SCHEDULING_ALGORITHM sch = atoi(argv[1]);
+  MEMORY_ALLOCATION_ALGORTHIM mem  = atoi(argv[2]);
+  memAlgo = mem;
 
-  if (sch < FCFS || sch > RR) {
+  if (sch < FCFS || sch > RR ) {
     printf("Invalid scheduling algorithm!\n");
     printSchedulingAlgorithms();
+    exit(-1);
+  }
+
+  if (mem < FIRSTFIT || mem > BUDDY ) {
+    printf("Invalid Memory allocation algorithm!\n");
+    printMemoryAllocationALgorthims();
     exit(-1);
   }
 
@@ -166,6 +186,7 @@ static inline void loadBuffer(bool ran) {
   down(bufsemid);
   for (int i = 0; i < *messageCount; ++i) {
     Process *currentProcess = buffer + i;
+    //if we reached the limit of the size of the process table then we double it.
     if (currentProcess->id >= processTableSize) {
       int oldSize = processTableSize;
       while (currentProcess->id >= processTableSize) {
@@ -176,7 +197,34 @@ static inline void loadBuffer(bool ran) {
       free(processTable);
       processTable = newProcessTable;
     }
-    ProcessInfo newProcess = addProcess(currentProcess);
+
+    switch (memAlgo) {
+      case FIRSTFIT:
+        allocate = firstFit(currentProcess);
+        break;
+      case NEXTFIT:
+        allocate = nextFit(currentProcess);
+        break;
+      case BESTFIT:
+        allocate = bestFit(currentProcess);
+        break;
+      case BUDDY:
+        allocate = buddy(currentProcess);
+        break;
+      default:
+        printf("Invalid memory allocation algorithm!\n");
+        printMemoryAllocationALgorthims();
+        exit(-1);
+    }
+    ProcessInfo newProcess;
+    if (allocate || true)           // true to be removed later, just to test sch algo 
+    {
+      newProcess = addProcess(currentProcess);
+    }
+    else 
+    {
+      // add waiting 
+    }
     if (ran) {
       (processTable[newProcess.id])->wait += 1;
     }
@@ -185,6 +233,7 @@ static inline void loadBuffer(bool ran) {
   *messageCount = 0;
   up(bufsemid);
 }
+
 
 ProcessInfo addProcess(Process *process) {
   processTable[process->id] = malloc(sizeof(PCB));
@@ -195,6 +244,7 @@ ProcessInfo addProcess(Process *process) {
   pcb->priority = process->priority;
   pcb->start = -1;
   pcb->remain = process->runtime;
+  pcb->mem = process->mem;
   pcb->execution = 0;
   pcb->wait = 0;
   pcb->state = WAITING;
@@ -666,6 +716,25 @@ bool rr() {
   pcb->execution += 1;
 
   return true;
+}
+
+bool firstFit(Process* process){
+
+}
+
+
+bool nextFit(Process* process){
+
+}
+
+
+bool bestFit(Process* process){
+
+}
+
+
+bool buddy(Process* process){
+
 }
 
 void clearResources(int signum) {

@@ -41,6 +41,13 @@ typedef enum SCHEDULING_ALGORITHM {
   RR
 } SCHEDULING_ALGORITHM;
 
+typedef enum MEMORY_ALLOCATION_ALGORTHIM{
+  FIRSTFIT,
+  NEXTFIT,
+  BESTFIT,
+  BUDDY
+}MEMORY_ALLOCATION_ALGORTHIM;
+
 typedef enum PROCESS_STATE {
   WAITING,
   RUNNING
@@ -54,6 +61,7 @@ typedef struct Process {
   int arrival;
   int runtime;
   int priority;
+  int mem;
 } Process;
 
 typedef struct ProcessInfo {
@@ -71,6 +79,7 @@ typedef struct PCB
   int arrival;
   int runtime;
   int priority;
+  int mem;
   int start;
   int remain;
   int execution;
@@ -182,8 +191,17 @@ void printSchedulingAlgorithms() {
   printf("\t5. Round Robin (RR)\n");
 }
 
+void printMemoryAllocationALgorthims(){
+  printf("\n Memory allocation algorithms available:\n");
+  printf("\t1. First Fit\n");
+  printf("\t2. Next Fit\n");
+  printf("\t3. Best Fit\n");
+  printf("\t4. Buddy System Allocation\n");
+}
+
 void printHelp() {
-  printf("Usage: process_generator.out [input file] [scheduling algorithm]\n");
+  printf("Usage: process_generator.out [input file] [scheduling algorithm] [memory allocation algorthim]\n");
   printSchedulingAlgorithms();
-  printf("ex: process_generator.out input.txt 2\n");
+  printMemoryAllocationALgorthims();
+  printf("ex: process_generator.out input.txt 2 3\n");
 }
