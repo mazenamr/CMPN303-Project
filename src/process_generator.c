@@ -90,6 +90,7 @@ int main(int argc, char *argv[]) {
 
   // make sure everything ended properly
   sleep(5);
+  down(bufsemid);
 
   clearResources(-1);
 }
