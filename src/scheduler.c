@@ -401,7 +401,7 @@ void removeProcess(ProcessInfo *process) {
   fprintf(pFile, "Avg WTA = %0.2f\n", totalWTA / (float)totalCount);
   fprintf(pFile, "Avg Waiting = %0.2f\n", totalWait / (float)totalCount);
   fclose(pFile);
-  deallocate(pcb->starttime, pcb->id);
+  deallocate(pcb->memsize, pcb->id);
   free(pcb);
 }
 
@@ -953,41 +953,41 @@ int firstFit(PCB* process) {
     }
     node = node->next;
   }
-  // add to wait queue here
   return -1;
 }
 
 int nextFit(PCB* process) {
-  MemoryNode *memoryNode = (MemoryNode *)memoryLast->data;
-
-  if (memoryNode->size >= process->memsize && memoryNode->process == 0) {
-    if (allocate(memoryNode->start, process->memsize, process->id)) {
-      return memoryNode->start;
-    }
-  }
-  // add to wait queue here
-  return -1;
-}
-
-int bestFit(PCB* process){
-  int minNeededSize = process->memsize;
-  int currentMinSize = MEMORY_SIZE+1;
-
-  Node *node = memoryHead;
-  MemoryNode* fitNode;
-  bool allocated = false;
+  Node *node = memoryLast;
   for (int i = 0; i < memory->length; ++i) {
     MemoryNode *memoryNode = (MemoryNode *)node->data;
     if (memoryNode->size >= process->memsize && memoryNode->process == 0) {
-      if (currentMinSize >= memoryNode->size){
-        currentMinSize = memoryNode->size;
-        fitNode = memoryNode;
+      if(allocate(memoryNode->start, process->memsize, process->id)) {
+        return memoryNode->start;
       }
     }
     node = node->next;
   }
-  if (allocate(fitNode->start, process->memsize, process->id) ) {
-    return fitNode->start;
+  return -1;
+}
+
+int bestFit(PCB* process){
+  int minsize = MEMORY_SIZE+1;
+  int start = -1;
+
+  MemoryNode *memoryNode = NULL;
+  for (int i = 0; i < memory->length; ++i) {
+    peekCQ(memory, (void **)&memoryNode);
+    if (memoryNode->size >= process->memsize && !memoryNode->process) {
+      if (minsize >= memoryNode->size) {
+        minsize = memoryNode->size;
+        start = memoryNode->start;
+      }
+    }
+  }
+  free(memoryNode);
+
+  if (allocate(start, process->memsize, process->id) ) {
+    return start;
   }
 
   return -1;
